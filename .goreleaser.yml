@@ -1,0 +1,49 @@
+env:
+  - GO111MODULE=on
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - binary: Nachrichten
+    flags:
+      - -trimpath
+    ldflags: -s -w -X main.Version={{ .Version }} -X main.CommitSHA={{ .Commit }}
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - 6
+      - 7
+
+nfpms:
+  - builds:
+      - Nachrichten
+    vendor: Moooooritz
+    homepage: "https://github.com/zMoooooritz"
+    maintainer: "Moritz Biering <moritzbiering.mb@gmail.com>"
+    description: "A TUI application to read German news"
+    license: MIT
+    formats:
+      - apk
+      - deb
+      - rpm
+    bindir: /usr/bin
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
