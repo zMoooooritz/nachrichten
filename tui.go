@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -52,6 +53,8 @@ var (
 		return readerTitleInactiveStyle.Copy().BorderStyle(b)
 	}()
 
+	keyStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#CCCCCC"))
+
 	titleActiveStyle = lipgloss.NewStyle().
 				Background(lipgloss.Color("62")).
 				Foreground(lipgloss.Color("230"))
@@ -76,14 +79,46 @@ func (i item) Title() string       { return i.title }
 func (i item) Description() string { return i.desc }
 func (i item) FilterValue() string { return i.title }
 
-type keymap = struct {
-	quit, enter, leave, next, prev, open, video, shortNews key.Binding
+type keymap struct {
+	quit      key.Binding
+	right     key.Binding
+	left      key.Binding
+	next      key.Binding
+	up        key.Binding
+	down      key.Binding
+	prev      key.Binding
+	open      key.Binding
+	video     key.Binding
+	shortNews key.Binding
+	help      key.Binding
+}
+
+func (k keymap) ShortHelp() []key.Binding {
+	return []key.Binding{k.left, k.right, k.up, k.down, k.next, k.help, k.quit}
+}
+
+func (k keymap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.left},
+		{k.right},
+		{k.up},
+		{k.down},
+		{k.next},
+		{k.prev},
+		{k.open},
+		{k.video},
+		{k.shortNews},
+		{k.help},
+		{k.quit},
+	}
 }
 
 type Model struct {
 	news               News
 	keymap             keymap
 	ready              bool
+	help               help.Model
+	helpMode           int
 	lists              []list.Model
 	listsActiveIndeces []int
 	activeListIndex    int
@@ -126,35 +161,65 @@ func NewDotSpinner() spinner.Model {
 	return s
 }
 
+func NewHelper() help.Model {
+	h := help.New()
+	h.FullSeparator = " • "
+	h.Styles.ShortKey = keyStyle
+	h.Styles.FullKey = keyStyle
+	return h
+}
+
 func InitialModel() Model {
 	m := Model{
 		keymap: keymap{
 			quit: key.NewBinding(
 				key.WithKeys("q", "esc", "ctrl+c"),
+				key.WithHelp("q", "quit"),
 			),
-			enter: key.NewBinding(
-				key.WithKeys("l"),
+			right: key.NewBinding(
+				key.WithKeys("l", "right"),
+				key.WithHelp("→/l", "right"),
 			),
-			leave: key.NewBinding(
-				key.WithKeys("h"),
+			left: key.NewBinding(
+				key.WithKeys("h", "left"),
+				key.WithHelp("←/h", "left"),
+			),
+			up: key.NewBinding(
+				key.WithKeys("j", "down"),
+				key.WithHelp("↓/j", "down"),
+			),
+			down: key.NewBinding(
+				key.WithKeys("k", "up"),
+				key.WithHelp("↑/k", "up"),
 			),
 			next: key.NewBinding(
 				key.WithKeys("tab"),
+				key.WithHelp("tab", "next"),
 			),
 			prev: key.NewBinding(
 				key.WithKeys("shift+tab"),
+				key.WithHelp("shift+tab", "prev"),
 			),
 			open: key.NewBinding(
 				key.WithKeys("o"),
+				key.WithHelp("o", "open"),
 			),
 			video: key.NewBinding(
 				key.WithKeys("v"),
+				key.WithHelp("v", "video"),
 			),
 			shortNews: key.NewBinding(
 				key.WithKeys("s"),
+				key.WithHelp("s", "shortnews"),
+			),
+			help: key.NewBinding(
+				key.WithKeys("?"),
+				key.WithHelp("?", "help"),
 			),
 		},
 		ready:              false,
+		help:               NewHelper(),
+		helpMode:           1,
 		reader:             viewport.New(0, 0),
 		spinner:            NewDotSpinner(),
 		focus:              0,
@@ -190,9 +255,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keymap.quit):
 			return m, tea.Quit
-		case key.Matches(msg, m.keymap.enter):
+		case key.Matches(msg, m.keymap.help):
+			m.helpMode = (m.helpMode + 1) % 3
+			if m.helpMode == 1 {
+				m.help.ShowAll = false
+			}
+			if m.helpMode == 2 {
+				m.help.ShowAll = true
+			}
+			m.updateSizes(m.width, m.height)
+		case key.Matches(msg, m.keymap.right):
 			m.readerFocused = true
-		case key.Matches(msg, m.keymap.leave):
+		case key.Matches(msg, m.keymap.left):
 			m.readerFocused = false
 		case key.Matches(msg, m.keymap.next):
 			m.readerFocused = false
@@ -211,18 +285,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			_ = open_url(url)
 		}
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-
-		m.reader.YPosition = m.readerHeaderHeight()
-
-		for i := range m.lists {
-			m.lists[i].SetSize(m.listOuterDims())
-			width, _ := m.listInnerDims()
-			m.lists[i].Title = lipgloss.PlaceHorizontal(width, lipgloss.Center, headerText)
-		}
-
-		m.reader.Width, m.reader.Height = m.readerDims()
+		m.updateSizes(msg.Width, msg.Height)
 	default:
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
@@ -245,8 +308,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m *Model) updateSizes(width, height int) {
+	m.width = width
+	m.height = height
+
+	m.reader.YPosition = m.readerHeaderHeight()
+
+	for i := range m.lists {
+		m.lists[i].SetSize(m.listOuterDims())
+		w, _ := m.listInnerDims()
+		m.lists[i].Title = lipgloss.PlaceHorizontal(w, lipgloss.Center, headerText)
+	}
+
+	m.reader.Width, m.reader.Height = m.readerDims()
+	m.help.Width = m.width
+}
+
 func (m Model) listOuterDims() (int, int) {
-	return m.width / 3, m.height - 5
+	return m.width / 3, m.height - m.helperHeight() - 5
 }
 
 func (m Model) listInnerDims() (int, int) {
@@ -261,7 +340,7 @@ func (m Model) listSelectorDims() (int, int) {
 
 func (m Model) readerDims() (int, int) {
 	lw, _ := m.listOuterDims()
-	return m.width - lw - 7, m.height - m.readerHeaderHeight() - m.readerFooterHeight()
+	return m.width - lw - 7, m.height - m.readerHeaderHeight() - m.readerFooterHeight() - m.helperHeight()
 }
 
 func (m Model) readerHeaderHeight() int {
@@ -270,6 +349,13 @@ func (m Model) readerHeaderHeight() int {
 
 func (m Model) readerFooterHeight() int {
 	return lipgloss.Height(m.footerView())
+}
+
+func (m Model) helperHeight() int {
+	if m.helpMode > 0 {
+		return 2
+	}
+	return 0
 }
 
 func (m Model) SelectedArticle() NewsEntry {
@@ -297,7 +383,12 @@ func (m Model) View() string {
 	article := m.SelectedArticle()
 	reader := fmt.Sprintf("%s\n%s\n%s", m.headerView(article.TopLine, article.Date.Format(germanDateFormat)), m.reader.View(), m.footerView())
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, list, reader)
+	help := ""
+	if m.helpMode > 0 {
+		help = "\n" + lipgloss.NewStyle().Width(m.width).AlignHorizontal(lipgloss.Center).Render(m.help.View(m.keymap))
+	}
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, list, reader) + help
 }
 
 func (m Model) listSelectorView(names []string, activeIndex int) string {
