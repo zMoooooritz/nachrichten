@@ -8,8 +8,8 @@ type News struct {
 }
 
 type NewsEntry struct {
-	TopLine      string    `json:"topline"`
-	Title        string    `json:"title"`
+	Topline      string    `json:"topline"`
+	Desc         string    `json:"title"`
 	Introduction string    `json:"firstSentence"`
 	URL          string    `json:"shareURL"`
 	Breaking     bool      `json:"breakingNews"`

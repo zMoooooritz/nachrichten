@@ -21,47 +21,6 @@ const (
 )
 
 var (
-	activeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("62")).BorderForeground(lipgloss.Color("62"))
-
-	inactiveStyle = lipgloss.NewStyle()
-
-	listActiveStyle = activeStyle.Copy().Padding(1, 1, 1, 1).Margin(0, 1, 0, 1).BorderStyle(lipgloss.RoundedBorder())
-
-	listInactiveStyle = inactiveStyle.Copy().Padding(1, 1, 1, 1).Margin(0, 1, 0, 1).BorderStyle(lipgloss.RoundedBorder())
-
-	readerTitleActiveStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Right = "├"
-		return activeStyle.Copy().BorderStyle(b).Padding(0, 1)
-	}()
-
-	readerTitleInactiveStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Right = "├"
-		return inactiveStyle.Copy().BorderStyle(b).Padding(0, 1)
-	}()
-
-	readerInfoActiveStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Left = "┤"
-		return readerTitleActiveStyle.Copy().BorderStyle(b)
-	}()
-
-	readerInfoInactiveStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Left = "┤"
-		return readerTitleInactiveStyle.Copy().BorderStyle(b)
-	}()
-
-	keyStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#CCCCCC"))
-
-	titleActiveStyle = lipgloss.NewStyle().
-				Background(lipgloss.Color("62")).
-				Foreground(lipgloss.Color("230"))
-
-	titleInactiveStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("230"))
-
 	screenCentered = func(w, h int) lipgloss.Style {
 		return lipgloss.NewStyle().
 			Width(w).
@@ -71,13 +30,9 @@ var (
 	}
 )
 
-type item struct {
-	title, desc string
-}
-
-func (i item) Title() string       { return i.title }
-func (i item) Description() string { return i.desc }
-func (i item) FilterValue() string { return i.title }
+func (n NewsEntry) Title() string       { return n.Topline }
+func (n NewsEntry) Description() string { return n.Desc }
+func (n NewsEntry) FilterValue() string { return n.Topline }
 
 type keymap struct {
 	quit      key.Binding
@@ -116,6 +71,7 @@ func (k keymap) FullHelp() [][]key.Binding {
 type Model struct {
 	news               News
 	keymap             keymap
+	style              Style
 	ready              bool
 	help               help.Model
 	helpMode           int
@@ -134,8 +90,11 @@ func (m *Model) InitLists(news [][]NewsEntry) {
 	for i, n := range news {
 		var items []list.Item
 		for _, ne := range n {
-			items = append(items, item{title: ne.TopLine, desc: ne.Title})
+			items = append(items, ne)
 		}
+		// for _, ne := range n {
+		// 	items = append(items, item{title: ne.TopLine, desc: ne.Title})
+		// }
 
 		m.lists[i].SetItems(items)
 		m.listsActiveIndeces = append(m.listsActiveIndeces, 0)
@@ -145,7 +104,7 @@ func (m *Model) InitLists(news [][]NewsEntry) {
 func EmptyLists(count int) []list.Model {
 	var lists []list.Model
 	for i := 0; i < count; i++ {
-		newList := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+		newList := list.New([]list.Item{}, NewNewsDelegate(), 0, 0)
 		newList.SetFilteringEnabled(false)
 		newList.SetShowTitle(true)
 		newList.SetShowStatusBar(false)
@@ -161,11 +120,11 @@ func NewDotSpinner() spinner.Model {
 	return s
 }
 
-func NewHelper() help.Model {
+func NewHelper(s Style) help.Model {
 	h := help.New()
 	h.FullSeparator = " • "
-	h.Styles.ShortKey = keyStyle
-	h.Styles.FullKey = keyStyle
+	h.Styles.ShortKey = s.InactiveStyle
+	h.Styles.FullKey = s.InactiveStyle
 	return h
 }
 
@@ -217,8 +176,9 @@ func InitialModel() Model {
 				key.WithHelp("?", "help"),
 			),
 		},
+		style:              DefaultNewsStyle(),
 		ready:              false,
-		help:               NewHelper(),
+		help:               NewHelper(DefaultNewsStyle()),
 		helpMode:           1,
 		reader:             viewport.New(0, 0),
 		spinner:            NewDotSpinner(),
@@ -375,13 +335,13 @@ func (m Model) View() string {
 	}
 
 	listHeader := m.listSelectorView([]string{nationalHeaderText, regionalHeaderText}, m.activeListIndex)
-	listStyle := listActiveStyle
+	listStyle := m.style.ListActiveStyle
 	if m.readerFocused {
-		listStyle = listInactiveStyle
+		listStyle = m.style.ListInactiveStyle
 	}
 	list := listStyle.Render(lipgloss.JoinVertical(lipgloss.Left, listHeader, m.lists[m.activeListIndex].View()))
 	article := m.SelectedArticle()
-	reader := fmt.Sprintf("%s\n%s\n%s", m.headerView(article.TopLine, article.Date.Format(germanDateFormat)), m.reader.View(), m.footerView())
+	reader := fmt.Sprintf("%s\n%s\n%s", m.headerView(article.Topline, article.Date.Format(germanDateFormat)), m.reader.View(), m.footerView())
 
 	help := ""
 	if m.helpMode > 0 {
@@ -401,9 +361,9 @@ func (m Model) listSelectorView(names []string, activeIndex int) string {
 	widths = append(widths, width-(len(names)-1)*cellWidth)
 	result := ""
 	for i, n := range names {
-		style := titleInactiveStyle
+		style := m.style.TitleInactiveStyle
 		if i == activeIndex {
-			style = titleActiveStyle
+			style = m.style.TitleActiveStyle
 		}
 		result += style.Render(lipgloss.PlaceHorizontal(widths[i], lipgloss.Center, n))
 	}
@@ -411,13 +371,13 @@ func (m Model) listSelectorView(names []string, activeIndex int) string {
 }
 
 func (m Model) headerView(name string, date string) string {
-	titleStyle := readerTitleInactiveStyle
-	lineStyle := inactiveStyle
-	dateStyle := readerInfoInactiveStyle
+	titleStyle := m.style.ReaderTitleInactiveStyle
+	lineStyle := m.style.InactiveStyle
+	dateStyle := m.style.ReaderInfoInactiveStyle
 	if m.readerFocused {
-		titleStyle = readerTitleActiveStyle
-		lineStyle = activeStyle
-		dateStyle = readerInfoActiveStyle
+		titleStyle = m.style.ReaderTitleActiveStyle
+		lineStyle = m.style.ActiveStyle
+		dateStyle = m.style.ReaderInfoActiveStyle
 	}
 
 	title := titleStyle.Render(name)
@@ -428,11 +388,11 @@ func (m Model) headerView(name string, date string) string {
 }
 
 func (m Model) footerView() string {
-	infoStyle := readerInfoInactiveStyle
-	lineStyle := inactiveStyle
+	infoStyle := m.style.ReaderInfoInactiveStyle
+	lineStyle := m.style.InactiveStyle
 	if m.readerFocused {
-		infoStyle = readerInfoActiveStyle
-		lineStyle = activeStyle
+		infoStyle = m.style.ReaderInfoActiveStyle
+		lineStyle = m.style.ActiveStyle
 	}
 
 	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.reader.ScrollPercent()*100))
