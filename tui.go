@@ -92,9 +92,6 @@ func (m *Model) InitLists(news [][]NewsEntry) {
 		for _, ne := range n {
 			items = append(items, ne)
 		}
-		// for _, ne := range n {
-		// 	items = append(items, item{title: ne.TopLine, desc: ne.Title})
-		// }
 
 		m.lists[i].SetItems(items)
 		m.listsActiveIndeces = append(m.listsActiveIndeces, 0)

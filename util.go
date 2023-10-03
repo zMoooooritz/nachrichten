@@ -36,6 +36,7 @@ func ContentToText(content []Content, width int) string {
 	)
 
 	prevType := "text"
+	prevSection := false
 	paragraph := ""
 	var paragraphs []string
 	for _, c := range content {
@@ -45,6 +46,11 @@ func ContentToText(content []Content, width int) string {
 		case "headline":
 			text := c.Value
 			if strings.Trim(text, " ") == "" {
+				continue
+			}
+
+			// drop author information
+			if IsHighlighted(text, "em") {
 				continue
 			}
 
@@ -60,17 +66,17 @@ func ContentToText(content []Content, width int) string {
 				}
 				text = text[:startIdx+2] + text[endIndex+1:]
 			}
-			if prevType != c.Type {
+			sec := IsSection(text)
+			if (prevType != c.Type || sec || prevSection) && paragraph != "" {
 				paragraphs = append(paragraphs, paragraph)
 				paragraph = ""
 			}
-			if strings.Contains(text, "<strong>") {
-				text += "\n\n"
-			}
 			paragraph += text + " "
+			prevSection = sec
 		}
 		prevType = c.Type
 	}
+	paragraphs = append(paragraphs, paragraph)
 
 	result := ""
 	for _, p := range paragraphs {
@@ -79,6 +85,14 @@ func ContentToText(content []Content, width int) string {
 		result += text
 	}
 	return padText(result, width)
+}
+
+func IsSection(text string) bool {
+	return IsHighlighted(text, "strong") || IsHighlighted(text, "em")
+}
+
+func IsHighlighted(text string, tag string) bool {
+	return strings.HasPrefix(text, "<"+tag+">") && strings.HasSuffix(text, "</"+tag+">")
 }
 
 func padText(text string, width int) string {
