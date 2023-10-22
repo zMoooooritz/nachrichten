@@ -42,6 +42,8 @@ type keymap struct {
 	up        key.Binding
 	down      key.Binding
 	prev      key.Binding
+	start     key.Binding
+	end       key.Binding
 	open      key.Binding
 	video     key.Binding
 	shortNews key.Binding
@@ -58,6 +60,8 @@ func (k keymap) FullHelp() [][]key.Binding {
 		{k.right},
 		{k.up},
 		{k.down},
+		{k.start},
+		{k.end},
 		{k.next},
 		{k.prev},
 		{k.open},
@@ -148,6 +152,14 @@ func InitialModel() Model {
 				key.WithKeys("k", "up"),
 				key.WithHelp("↑/k", "up"),
 			),
+			start: key.NewBinding(
+				key.WithKeys("g", "home"),
+				key.WithHelp("g/home", "start"),
+			),
+			end: key.NewBinding(
+				key.WithKeys("G", "end"),
+				key.WithHelp("G/end", "end"),
+			),
 			next: key.NewBinding(
 				key.WithKeys("tab"),
 				key.WithHelp("tab", "next"),
@@ -228,6 +240,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.next):
 			m.readerFocused = false
 			m.activeListIndex = (m.activeListIndex + 1) % len(m.lists)
+		case key.Matches(msg, m.keymap.start):
+			if m.readerFocused {
+				m.reader.GotoTop()
+			}
+		case key.Matches(msg, m.keymap.end):
+			if m.readerFocused {
+				m.reader.GotoBottom()
+			}
 		case key.Matches(msg, m.keymap.prev):
 			m.readerFocused = false
 			m.activeListIndex = (len(m.lists) + m.activeListIndex - 1) % len(m.lists)
