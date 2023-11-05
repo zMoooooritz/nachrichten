@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -8,9 +10,41 @@ import (
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"gopkg.in/yaml.v3"
 )
 
-func open_url(url string) error {
+func openUrl(t ResourceType, c Configuration, url string) error {
+	var appConfig ApplicationConfig
+
+	switch t {
+	case TypeImage:
+		appConfig = c.AppConfig.Image
+	case TypeAudio:
+		appConfig = c.AppConfig.Audio
+	case TypeVideo:
+		appConfig = c.AppConfig.Video
+	case TypeHTML:
+		appConfig = c.AppConfig.HTML
+	default:
+		return defaultOpenUrl(url)
+	}
+
+	cConfig := appConfig
+	cConfig.Args = append([]string(nil), appConfig.Args...)
+
+	if cConfig.Path == "" || len(cConfig.Args) == 0 {
+		return defaultOpenUrl(url)
+	}
+
+	for i, arg := range cConfig.Args {
+		if arg == "$" {
+			cConfig.Args[i] = url
+		}
+	}
+	return exec.Command(cConfig.Path, cConfig.Args...).Start()
+}
+
+func defaultOpenUrl(url string) error {
 	var cmd string
 	var args []string
 
@@ -25,6 +59,22 @@ func open_url(url string) error {
 	}
 	args = append(args, url)
 	return exec.Command(cmd, args...).Start()
+}
+
+func loadConfig(path string) Configuration {
+	var config Configuration
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Println(err)
+		return config
+	}
+
+	err = yaml.Unmarshal(data, &config)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return config
 }
 
 func ContentToText(content []Content, width int) string {

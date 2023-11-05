@@ -73,6 +73,7 @@ func (k keymap) FullHelp() [][]key.Binding {
 }
 
 type Model struct {
+	configuration      Configuration
 	news               News
 	keymap             keymap
 	style              Style
@@ -129,8 +130,9 @@ func NewHelper(s Style) help.Model {
 	return h
 }
 
-func InitialModel() Model {
+func InitialModel(c Configuration) Model {
 	m := Model{
+		configuration: c,
 		keymap: keymap{
 			quit: key.NewBinding(
 				key.WithKeys("q", "esc", "ctrl+c"),
@@ -253,13 +255,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.activeListIndex = (len(m.lists) + m.activeListIndex - 1) % len(m.lists)
 		case key.Matches(msg, m.keymap.open):
 			article := m.SelectedArticle()
-			_ = open_url(article.URL)
+			_ = openUrl(TypeHTML, m.configuration, article.URL)
 		case key.Matches(msg, m.keymap.video):
 			article := m.SelectedArticle()
-			_ = open_url(article.Video.VideoURLs.Big)
+			_ = openUrl(TypeVideo, m.configuration, article.Video.VideoURLs.Big)
 		case key.Matches(msg, m.keymap.shortNews):
 			url, _ := getShortNewsURL()
-			_ = open_url(url)
+			_ = openUrl(TypeVideo, m.configuration, url)
 		}
 	case tea.WindowSizeMsg:
 		m.updateSizes(msg.Width, msg.Height)

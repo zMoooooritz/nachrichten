@@ -1,0 +1,23 @@
+
+# Configuration on how to open specific resources
+# Via the args it is possible to provide flags to the application
+# the arg $ will be replaced by the url of the resource
+#
+Application:
+  Image:
+    path: sxiv
+    args:
+      - $
+  Audio:
+    path: mpv
+    args:
+      - $
+  Video:
+    path: mpv
+    args:
+      - $
+  HTML:
+    path: qutebrowser
+    args:
+      - $
+
