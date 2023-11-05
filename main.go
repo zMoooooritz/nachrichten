@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -8,7 +9,14 @@ import (
 )
 
 func main() {
-	p := tea.NewProgram(InitialModel(),
+
+	configFile := flag.String("config", "~/.config/nachrichten/config.yaml", "Path to configuration file")
+
+	flag.Parse()
+
+	configuration := loadConfig(*configFile)
+
+	p := tea.NewProgram(InitialModel(configuration),
 		tea.WithAltScreen(),
 		// tea.WithMouseCellMotion(),
 	)

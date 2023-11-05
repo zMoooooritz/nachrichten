@@ -49,3 +49,28 @@ type VideoURLs struct {
 	Medium string `json:"h264m"`
 	Big    string `json:"h264xl"`
 }
+
+type Configuration struct {
+	AppConfig ApplicationsConfig `yaml:"Application"`
+}
+
+type ApplicationsConfig struct {
+	Image ApplicationConfig `yaml:"Image,omitempty"`
+	Audio ApplicationConfig `yaml:"Audio,omitempty"`
+	Video ApplicationConfig `yaml:"Video,omitempty"`
+	HTML  ApplicationConfig `yaml:"HTML,omitempty"`
+}
+
+type ApplicationConfig struct {
+	Path string   `yaml:"path"`
+	Args []string `yaml:"args"`
+}
+
+type ResourceType int
+
+const (
+	TypeImage ResourceType = iota
+	TypeAudio
+	TypeVideo
+	TypeHTML
+)
