@@ -32,14 +32,26 @@ type Style struct {
 	ItemBreakingDesc  lipgloss.Style
 }
 
-func DefaultNewsStyle() (s Style) {
-	primaryColor := lipgloss.Color("62")
-	secondaryColor := lipgloss.Color("230")
-	normalTitleColor := lipgloss.Color("#DDDDDD")
-	normalDescColor := lipgloss.Color("#777777")
-	selectedPrimaryColor := lipgloss.Color("#AD58B4")
-	selectedSecondaryColor := lipgloss.Color("#EE6FF8")
-	breakingColor := lipgloss.Color("#FF0000")
+func DefaultThemeConfiguration() ThemeConfig {
+	return ThemeConfig{
+		PrimaryColor:           "62",
+		SecondaryColor:         "230",
+		NormalTitleColor:       "#DDDDDD",
+		NormalDescColor:        "#777777",
+		SelectedPrimaryColor:   "#AD58B4",
+		SelectedSecondaryColor: "#EE6FF8",
+		BreakingColor:          "#FF0000",
+	}
+}
+
+func NewsStyle(t ThemeConfig) (s Style) {
+	primaryColor := lipgloss.Color(t.PrimaryColor)
+	secondaryColor := lipgloss.Color(t.SecondaryColor)
+	normalTitleColor := lipgloss.Color(t.NormalTitleColor)
+	normalDescColor := lipgloss.Color(t.NormalDescColor)
+	selectedPrimaryColor := lipgloss.Color(t.SelectedPrimaryColor)
+	selectedSecondaryColor := lipgloss.Color(t.SelectedSecondaryColor)
+	breakingColor := lipgloss.Color(t.BreakingColor)
 
 	s.ActiveStyle = lipgloss.NewStyle().Foreground(primaryColor).BorderForeground(primaryColor)
 	s.TitleActiveStyle = lipgloss.NewStyle().Background(primaryColor).Foreground(secondaryColor)

@@ -16,9 +16,9 @@ type NewsDelegate struct {
 	spacing int
 }
 
-func NewNewsDelegate() NewsDelegate {
+func NewNewsDelegate(s Style) NewsDelegate {
 	return NewsDelegate{
-		Styles:  DefaultNewsStyle(),
+		Styles:  s,
 		height:  2,
 		spacing: 1,
 	}
