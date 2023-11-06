@@ -1,23 +1,34 @@
 
-# Configuration on how to open specific resources
+# Configuration of how to open specific resources
 # Via the args it is possible to provide flags to the application
 # the arg $ will be replaced by the url of the resource
 #
 Application:
   Image:
-    path: sxiv
-    args:
+    Path: sxiv
+    Args:
       - $
   Audio:
-    path: mpv
-    args:
+    Path: mpv
+    Args:
       - $
   Video:
-    path: mpv
-    args:
+    Path: mpv
+    Args:
       - $
   HTML:
-    path: qutebrowser
-    args:
+    Path: qutebrowser
+    Args:
       - $
+
+# Configuration of the theming
+# Currently only the configuration of colors is implemented
+Theme:
+  PrimaryColor: "62"
+  SecondaryColor: "230"
+  NormalTitleColor: "#DDDDDD"
+  NormalDescColor: "#777777"
+  SelectedPrimaryColor: "#AD58B4"
+  SelectedSecondaryColor: "#EE6FF8"
+  BreakingColor: "#FF0000"
 

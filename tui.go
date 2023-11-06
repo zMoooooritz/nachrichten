@@ -103,10 +103,10 @@ func (m *Model) InitLists(news [][]NewsEntry) {
 	}
 }
 
-func EmptyLists(count int) []list.Model {
+func EmptyLists(s Style, count int) []list.Model {
 	var lists []list.Model
 	for i := 0; i < count; i++ {
-		newList := list.New([]list.Item{}, NewNewsDelegate(), 0, 0)
+		newList := list.New([]list.Item{}, NewNewsDelegate(s), 0, 0)
 		newList.SetFilteringEnabled(false)
 		newList.SetShowTitle(true)
 		newList.SetShowStatusBar(false)
@@ -131,6 +131,14 @@ func NewHelper(s Style) help.Model {
 }
 
 func InitialModel(c Configuration) Model {
+	tc := ThemeConfig{}
+	var style Style
+	if c.ThemeConfig != tc {
+		style = NewsStyle(c.ThemeConfig)
+	} else {
+		style = NewsStyle(DefaultThemeConfiguration())
+	}
+
 	m := Model{
 		configuration: c,
 		keymap: keymap{
@@ -187,14 +195,14 @@ func InitialModel(c Configuration) Model {
 				key.WithHelp("?", "help"),
 			),
 		},
-		style:              DefaultNewsStyle(),
+		style:              style,
 		ready:              false,
-		help:               NewHelper(DefaultNewsStyle()),
+		help:               NewHelper(style),
 		helpMode:           1,
 		reader:             viewport.New(0, 0),
 		spinner:            NewDotSpinner(),
 		focus:              0,
-		lists:              EmptyLists(2),
+		lists:              EmptyLists(style, 2),
 		listsActiveIndeces: []int{},
 		activeListIndex:    0,
 		width:              0,

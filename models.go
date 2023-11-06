@@ -51,7 +51,18 @@ type VideoURLs struct {
 }
 
 type Configuration struct {
-	AppConfig ApplicationsConfig `yaml:"Application"`
+	AppConfig   ApplicationsConfig `yaml:"Application,omitempty"`
+	ThemeConfig ThemeConfig        `yaml:"Theme,omitempty"`
+}
+
+type ThemeConfig struct {
+	PrimaryColor           string `yaml:"PrimaryColor"`
+	SecondaryColor         string `yaml:"SecondaryColor"`
+	NormalTitleColor       string `yaml:"NormaleTitleColor"`
+	NormalDescColor        string `yaml:"NormalDescColor"`
+	SelectedPrimaryColor   string `yaml:"SelectedPrimaryColor"`
+	SelectedSecondaryColor string `yaml:"SelectedSecondaryColor"`
+	BreakingColor          string `yaml:"BreakingColor"`
 }
 
 type ApplicationsConfig struct {
@@ -62,8 +73,8 @@ type ApplicationsConfig struct {
 }
 
 type ApplicationConfig struct {
-	Path string   `yaml:"path"`
-	Args []string `yaml:"args"`
+	Path string   `yaml:"Path"`
+	Args []string `yaml:"Args"`
 }
 
 type ResourceType int
