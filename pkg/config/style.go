@@ -1,9 +1,11 @@
-package main
+package config
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/lipgloss"
+)
 
 const (
-	ellipsis = "…"
+	Ellipsis = "…"
 )
 
 type Style struct {
