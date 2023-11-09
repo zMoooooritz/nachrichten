@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"fmt"
@@ -8,15 +8,17 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/reflow/truncate"
+	"github.com/zMoooooritz/Nachrichten/pkg/config"
+	"github.com/zMoooooritz/Nachrichten/pkg/tagesschau"
 )
 
 type NewsDelegate struct {
-	Styles  Style
+	Styles  config.Style
 	height  int
 	spacing int
 }
 
-func NewNewsDelegate(s Style) NewsDelegate {
+func NewNewsDelegate(s config.Style) NewsDelegate {
 	return NewsDelegate{
 		Styles:  s,
 		height:  2,
@@ -42,7 +44,7 @@ func (n NewsDelegate) Render(w io.Writer, m list.Model, index int, item list.Ite
 		s           = &n.Styles
 	)
 
-	entry, ok := item.(NewsEntry)
+	entry, ok := item.(tagesschau.NewsEntry)
 	if ok {
 		title = entry.Title()
 		desc = entry.Description()
@@ -57,13 +59,13 @@ func (n NewsDelegate) Render(w io.Writer, m list.Model, index int, item list.Ite
 
 	// Prevent text from exceeding list width
 	textwidth := uint(m.Width() - s.ItemNormalTitle.GetPaddingLeft() - s.ItemNormalTitle.GetPaddingRight())
-	title = truncate.StringWithTail(title, textwidth, ellipsis)
+	title = truncate.StringWithTail(title, textwidth, config.Ellipsis)
 	var lines []string
 	for i, line := range strings.Split(desc, "\n") {
 		if i >= n.height-1 {
 			break
 		}
-		lines = append(lines, truncate.StringWithTail(line, textwidth, ellipsis))
+		lines = append(lines, truncate.StringWithTail(line, textwidth, config.Ellipsis))
 	}
 	desc = strings.Join(lines, "\n")
 

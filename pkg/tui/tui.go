@@ -1,4 +1,4 @@
-package main
+package tui
 
 import (
 	"fmt"
@@ -11,6 +11,9 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/zMoooooritz/Nachrichten/pkg/config"
+	"github.com/zMoooooritz/Nachrichten/pkg/tagesschau"
+	"github.com/zMoooooritz/Nachrichten/pkg/util"
 )
 
 const (
@@ -30,53 +33,11 @@ var (
 	}
 )
 
-func (n NewsEntry) Title() string       { return n.Topline }
-func (n NewsEntry) Description() string { return n.Desc }
-func (n NewsEntry) FilterValue() string { return n.Topline }
-
-type keymap struct {
-	quit      key.Binding
-	right     key.Binding
-	left      key.Binding
-	next      key.Binding
-	up        key.Binding
-	down      key.Binding
-	prev      key.Binding
-	start     key.Binding
-	end       key.Binding
-	open      key.Binding
-	video     key.Binding
-	shortNews key.Binding
-	help      key.Binding
-}
-
-func (k keymap) ShortHelp() []key.Binding {
-	return []key.Binding{k.left, k.right, k.up, k.down, k.next, k.help, k.quit}
-}
-
-func (k keymap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.left},
-		{k.right},
-		{k.up},
-		{k.down},
-		{k.start},
-		{k.end},
-		{k.next},
-		{k.prev},
-		{k.open},
-		{k.video},
-		{k.shortNews},
-		{k.help},
-		{k.quit},
-	}
-}
-
 type Model struct {
-	configuration      Configuration
-	news               News
-	keymap             keymap
-	style              Style
+	configuration      config.Configuration
+	news               tagesschau.News
+	keymap             KeyMap
+	style              config.Style
 	ready              bool
 	help               help.Model
 	helpMode           int
@@ -91,7 +52,7 @@ type Model struct {
 	height             int
 }
 
-func (m *Model) InitLists(news [][]NewsEntry) {
+func (m *Model) InitLists(news [][]tagesschau.NewsEntry) {
 	for i, n := range news {
 		var items []list.Item
 		for _, ne := range n {
@@ -103,98 +64,18 @@ func (m *Model) InitLists(news [][]NewsEntry) {
 	}
 }
 
-func EmptyLists(s Style, count int) []list.Model {
-	var lists []list.Model
-	for i := 0; i < count; i++ {
-		newList := list.New([]list.Item{}, NewNewsDelegate(s), 0, 0)
-		newList.SetFilteringEnabled(false)
-		newList.SetShowTitle(true)
-		newList.SetShowStatusBar(false)
-		newList.SetShowHelp(false)
-		lists = append(lists, newList)
-	}
-	return lists
-}
-
-func NewDotSpinner() spinner.Model {
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-	return s
-}
-
-func NewHelper(s Style) help.Model {
-	h := help.New()
-	h.FullSeparator = " • "
-	h.Styles.ShortKey = s.InactiveStyle
-	h.Styles.FullKey = s.InactiveStyle
-	return h
-}
-
-func InitialModel(c Configuration) Model {
-	tc := ThemeConfig{}
-	var style Style
+func InitialModel(c config.Configuration) Model {
+	tc := config.ThemeConfig{}
+	var style config.Style
 	if c.ThemeConfig != tc {
-		style = NewsStyle(c.ThemeConfig)
+		style = config.NewsStyle(c.ThemeConfig)
 	} else {
-		style = NewsStyle(DefaultThemeConfiguration())
+		style = config.NewsStyle(config.DefaultThemeConfiguration())
 	}
 
 	m := Model{
-		configuration: c,
-		keymap: keymap{
-			quit: key.NewBinding(
-				key.WithKeys("q", "esc", "ctrl+c"),
-				key.WithHelp("q", "quit"),
-			),
-			right: key.NewBinding(
-				key.WithKeys("l", "right"),
-				key.WithHelp("→/l", "right"),
-			),
-			left: key.NewBinding(
-				key.WithKeys("h", "left"),
-				key.WithHelp("←/h", "left"),
-			),
-			up: key.NewBinding(
-				key.WithKeys("j", "down"),
-				key.WithHelp("↓/j", "down"),
-			),
-			down: key.NewBinding(
-				key.WithKeys("k", "up"),
-				key.WithHelp("↑/k", "up"),
-			),
-			start: key.NewBinding(
-				key.WithKeys("g", "home"),
-				key.WithHelp("g/home", "start"),
-			),
-			end: key.NewBinding(
-				key.WithKeys("G", "end"),
-				key.WithHelp("G/end", "end"),
-			),
-			next: key.NewBinding(
-				key.WithKeys("tab"),
-				key.WithHelp("tab", "next"),
-			),
-			prev: key.NewBinding(
-				key.WithKeys("shift+tab"),
-				key.WithHelp("shift+tab", "prev"),
-			),
-			open: key.NewBinding(
-				key.WithKeys("o"),
-				key.WithHelp("o", "open"),
-			),
-			video: key.NewBinding(
-				key.WithKeys("v"),
-				key.WithHelp("v", "video"),
-			),
-			shortNews: key.NewBinding(
-				key.WithKeys("s"),
-				key.WithHelp("s", "shortnews"),
-			),
-			help: key.NewBinding(
-				key.WithKeys("?"),
-				key.WithHelp("?", "help"),
-			),
-		},
+		configuration:      c,
+		keymap:             GetKeyMap(),
 		style:              style,
 		ready:              false,
 		help:               NewHelper(style),
@@ -211,8 +92,14 @@ func InitialModel(c Configuration) Model {
 	return m
 }
 
+func GetNews() tea.Cmd {
+	return func() tea.Msg {
+		return tagesschau.LoadNews()
+	}
+}
+
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(getNews(), m.spinner.Tick)
+	return tea.Batch(GetNews(), m.spinner.Tick)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -222,9 +109,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
-	case loadedNews:
-		m.news = News(msg)
-		m.InitLists([][]NewsEntry{m.news.NationalNews, m.news.RegionalNews})
+	case tagesschau.News:
+		m.news = tagesschau.News(msg)
+		m.InitLists([][]tagesschau.NewsEntry{m.news.NationalNews, m.news.RegionalNews})
 		for i := range m.lists {
 			width, _ := m.listInnerDims()
 			m.lists[i].Title = lipgloss.PlaceHorizontal(width, lipgloss.Center, headerText)
@@ -263,13 +150,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.activeListIndex = (len(m.lists) + m.activeListIndex - 1) % len(m.lists)
 		case key.Matches(msg, m.keymap.open):
 			article := m.SelectedArticle()
-			_ = openUrl(TypeHTML, m.configuration, article.URL)
+			_ = util.OpenUrl(config.TypeHTML, m.configuration, article.URL)
 		case key.Matches(msg, m.keymap.video):
 			article := m.SelectedArticle()
-			_ = openUrl(TypeVideo, m.configuration, article.Video.VideoURLs.Big)
+			_ = util.OpenUrl(config.TypeVideo, m.configuration, article.Video.VideoURLs.Big)
 		case key.Matches(msg, m.keymap.shortNews):
-			url, _ := getShortNewsURL()
-			_ = openUrl(TypeVideo, m.configuration, url)
+			url, _ := tagesschau.GetShortNewsURL()
+			_ = util.OpenUrl(config.TypeVideo, m.configuration, url)
 		}
 	case tea.WindowSizeMsg:
 		m.updateSizes(msg.Width, msg.Height)
@@ -289,7 +176,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.lists[m.activeListIndex], cmd = m.lists[m.activeListIndex].Update(msg)
 		cmds = append(cmds, cmd)
 		m.listsActiveIndeces[m.activeListIndex] = m.lists[m.activeListIndex].Index()
-		m.reader.SetContent(ContentToText(m.SelectedArticle().Content, m.reader.Width))
+		m.reader.SetContent(util.ContentToText(m.SelectedArticle().Content, m.reader.Width))
 	}
 
 	return m, tea.Batch(cmds...)
@@ -345,8 +232,8 @@ func (m Model) helperHeight() int {
 	return 0
 }
 
-func (m Model) SelectedArticle() NewsEntry {
-	var article NewsEntry
+func (m Model) SelectedArticle() tagesschau.NewsEntry {
+	var article tagesschau.NewsEntry
 	if m.activeListIndex == 0 {
 		article = m.news.NationalNews[m.listsActiveIndeces[m.activeListIndex]]
 	} else {
@@ -409,7 +296,7 @@ func (m Model) headerView(name string, date string) string {
 
 	title := titleStyle.Render(name)
 	date = dateStyle.Render(date)
-	line := lineStyle.Render(strings.Repeat("─", max(0, m.reader.Width-lipgloss.Width(title)-lipgloss.Width(date))))
+	line := lineStyle.Render(strings.Repeat("─", util.Max(0, m.reader.Width-lipgloss.Width(title)-lipgloss.Width(date))))
 
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line, date)
 }
@@ -423,7 +310,7 @@ func (m Model) footerView() string {
 	}
 
 	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.reader.ScrollPercent()*100))
-	line := lineStyle.Render(strings.Repeat("─", max(0, m.reader.Width-lipgloss.Width(info))))
+	line := lineStyle.Render(strings.Repeat("─", util.Max(0, m.reader.Width-lipgloss.Width(info))))
 
 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
 }
