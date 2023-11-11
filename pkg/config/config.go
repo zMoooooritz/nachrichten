@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -21,6 +20,8 @@ type ThemeConfig struct {
 	SelectedPrimaryColor   string `yaml:"SelectedPrimaryColor"`
 	SelectedSecondaryColor string `yaml:"SelectedSecondaryColor"`
 	BreakingColor          string `yaml:"BreakingColor"`
+	ReaderHighlightColor   string `yaml:"ReaderHighlightColor"`
+	ReaderHeadingColor     string `yaml:"ReaderHeadingColor"`
 }
 
 type ApplicationsConfig struct {
@@ -62,13 +63,9 @@ func (c Config) Load() Configuration {
 
 	data, err := os.ReadFile(c.file)
 	if err != nil {
-		fmt.Println(err)
 		return config
 	}
 
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		fmt.Println(err)
-	}
+	_ = yaml.Unmarshal(data, &config)
 	return config
 }
