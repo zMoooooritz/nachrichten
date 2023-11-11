@@ -112,9 +112,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tagesschau.News:
 		m.news = tagesschau.News(msg)
 		m.InitLists([][]tagesschau.NewsEntry{m.news.NationalNews, m.news.RegionalNews})
+		width, _ := m.listSelectorDims()
 		for i := range m.lists {
-			width, _ := m.listInnerDims()
 			m.lists[i].Title = lipgloss.PlaceHorizontal(width, lipgloss.Center, headerText)
+			m.lists[i].Styles.Title = m.style.TitleActiveStyle
 		}
 		m.ready = true
 	case tea.KeyMsg:
@@ -176,7 +177,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.lists[m.activeListIndex], cmd = m.lists[m.activeListIndex].Update(msg)
 		cmds = append(cmds, cmd)
 		m.listsActiveIndeces[m.activeListIndex] = m.lists[m.activeListIndex].Index()
-		m.reader.SetContent(util.ContentToText(m.SelectedArticle().Content, m.reader.Width))
+		m.reader.SetContent(util.ContentToText(m.SelectedArticle().Content, m.reader.Width, m.style))
 	}
 
 	return m, tea.Batch(cmds...)

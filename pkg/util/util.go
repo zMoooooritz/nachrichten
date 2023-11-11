@@ -10,12 +10,12 @@ import (
 	"github.com/zMoooooritz/Nachrichten/pkg/tagesschau"
 )
 
-func ContentToText(content []tagesschau.Content, width int) string {
+func ContentToText(content []tagesschau.Content, width int, s config.Style) string {
 	converter := md.NewConverter("", true, nil)
 	renderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(width),
-		glamour.WithStyles(config.NachrichtenStyleConfig),
+		glamour.WithStyles(s.ReaderStyle),
 	)
 
 	prevType := "text"

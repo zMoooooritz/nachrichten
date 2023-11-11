@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/charmbracelet/glamour/ansi"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -32,17 +33,21 @@ type Style struct {
 	// The breaking item state
 	ItemBreakingTitle lipgloss.Style
 	ItemBreakingDesc  lipgloss.Style
+
+	ReaderStyle ansi.StyleConfig
 }
 
 func DefaultThemeConfiguration() ThemeConfig {
 	return ThemeConfig{
-		PrimaryColor:           "62",
-		SecondaryColor:         "230",
+		PrimaryColor:           "#3636D1",
+		SecondaryColor:         "#F8F8F2",
 		NormalTitleColor:       "#DDDDDD",
 		NormalDescColor:        "#777777",
 		SelectedPrimaryColor:   "#AD58B4",
 		SelectedSecondaryColor: "#EE6FF8",
 		BreakingColor:          "#FF0000",
+		ReaderHighlightColor:   "#FFB86C",
+		ReaderHeadingColor:     "#BD93F9",
 	}
 }
 
@@ -95,6 +100,8 @@ func NewsStyle(t ThemeConfig) (s Style) {
 	s.ItemBreakingTitle = lipgloss.NewStyle().Foreground(breakingColor).Padding(0, 0, 0, 2)
 
 	s.ItemBreakingDesc = s.ItemBreakingTitle.Copy().Foreground(breakingColor)
+
+	s.ReaderStyle = CreateReaderStyle(t)
 
 	return s
 }
