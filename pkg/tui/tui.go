@@ -11,9 +11,9 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/zMoooooritz/Nachrichten/pkg/config"
-	"github.com/zMoooooritz/Nachrichten/pkg/tagesschau"
-	"github.com/zMoooooritz/Nachrichten/pkg/util"
+	"github.com/zMoooooritz/nachrichten/pkg/config"
+	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
+	"github.com/zMoooooritz/nachrichten/pkg/util"
 )
 
 const (

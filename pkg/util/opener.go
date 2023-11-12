@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/zMoooooritz/Nachrichten/pkg/config"
+	"github.com/zMoooooritz/nachrichten/pkg/config"
 )
 
 func OpenUrl(t config.ResourceType, c config.Configuration, url string) error {

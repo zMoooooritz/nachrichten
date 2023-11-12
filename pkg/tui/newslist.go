@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/reflow/truncate"
-	"github.com/zMoooooritz/Nachrichten/pkg/config"
-	"github.com/zMoooooritz/Nachrichten/pkg/tagesschau"
+	"github.com/zMoooooritz/nachrichten/pkg/config"
+	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
 )
 
 type NewsDelegate struct {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/buger/jsonparser"
-	"github.com/zMoooooritz/Nachrichten/pkg/http"
+	"github.com/zMoooooritz/nachrichten/pkg/http"
 )
 
 const (

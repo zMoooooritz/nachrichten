@@ -1,4 +1,4 @@
-module github.com/zMoooooritz/Nachrichten
+module github.com/zMoooooritz/nachrichten
 
 go 1.20
 

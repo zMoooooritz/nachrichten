@@ -5,8 +5,8 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/zMoooooritz/Nachrichten/pkg/config"
-	"github.com/zMoooooritz/Nachrichten/pkg/tui"
+	"github.com/zMoooooritz/nachrichten/pkg/config"
+	"github.com/zMoooooritz/nachrichten/pkg/tui"
 )
 
 func Run() {
