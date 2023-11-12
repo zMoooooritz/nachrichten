@@ -6,8 +6,8 @@ import (
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/zMoooooritz/Nachrichten/pkg/config"
-	"github.com/zMoooooritz/Nachrichten/pkg/tagesschau"
+	"github.com/zMoooooritz/nachrichten/pkg/config"
+	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
 )
 
 func ContentToText(content []tagesschau.Content, width int, s config.Style) string {

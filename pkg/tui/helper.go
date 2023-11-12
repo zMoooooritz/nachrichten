@@ -4,7 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/zMoooooritz/Nachrichten/pkg/config"
+	"github.com/zMoooooritz/nachrichten/pkg/config"
 )
 
 func EmptyLists(s config.Style, count int) []list.Model {

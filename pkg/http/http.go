@@ -8,7 +8,7 @@ import (
 
 const (
 	httpTimeout time.Duration = 2
-	agentName   string        = "Nachrichten-Agent"
+	agentName   string        = "nachrichten-agent"
 )
 
 func FetchURL(url string) ([]byte, error) {
