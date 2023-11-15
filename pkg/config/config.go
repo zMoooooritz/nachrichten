@@ -8,8 +8,13 @@ import (
 )
 
 type Configuration struct {
-	AppConfig   ApplicationsConfig `yaml:"Application,omitempty"`
-	ThemeConfig ThemeConfig        `yaml:"Theme,omitempty"`
+	SettingsConfig SettingsConfig     `yaml:"Settings"`
+	AppConfig      ApplicationsConfig `yaml:"Application,omitempty"`
+	ThemeConfig    ThemeConfig        `yaml:"Theme,omitempty"`
+}
+
+type SettingsConfig struct {
+	HideHelpOnStartup bool `yaml:"HideHelpOnStartup"`
 }
 
 type ThemeConfig struct {
@@ -50,16 +55,18 @@ type Config struct {
 }
 
 func Init() Config {
-	cfg := Config{}
 
-	cfg.file = *flag.String("config", "~/.config/nachrichten/config.yaml", "Path to configuration file")
+	configFile := flag.String("config", "~/.config/nachrichten/config.yaml", "Path to configuration file")
 
 	flag.Parse()
+	cfg := Config{
+		file: *configFile,
+	}
 	return cfg
 }
 
 func (c Config) Load() Configuration {
-	var config Configuration
+	config := defaultConfiguration()
 
 	data, err := os.ReadFile(c.file)
 	if err != nil {
@@ -68,4 +75,12 @@ func (c Config) Load() Configuration {
 
 	_ = yaml.Unmarshal(data, &config)
 	return config
+}
+
+func defaultConfiguration() Configuration {
+	return Configuration{
+		SettingsConfig: SettingsConfig{
+			HideHelpOnStartup: false,
+		},
+	}
 }
