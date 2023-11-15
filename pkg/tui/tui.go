@@ -73,13 +73,18 @@ func InitialModel(c config.Configuration) Model {
 		style = config.NewsStyle(config.DefaultThemeConfiguration())
 	}
 
+	helpMode := 1
+	if c.SettingsConfig.HideHelpOnStartup {
+		helpMode = 0
+	}
+
 	m := Model{
 		configuration:      c,
 		keymap:             GetKeyMap(),
 		style:              style,
 		ready:              false,
 		help:               NewHelper(style),
-		helpMode:           1,
+		helpMode:           helpMode,
 		reader:             viewport.New(0, 0),
 		spinner:            NewDotSpinner(),
 		focus:              0,
