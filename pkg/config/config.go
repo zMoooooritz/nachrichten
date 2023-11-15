@@ -50,11 +50,13 @@ type Config struct {
 }
 
 func Init() Config {
-	cfg := Config{}
 
-	cfg.file = *flag.String("config", "~/.config/nachrichten/config.yaml", "Path to configuration file")
+	configFile := flag.String("config", "~/.config/nachrichten/config.yaml", "Path to configuration file")
 
 	flag.Parse()
+	cfg := Config{
+		file: *configFile,
+	}
 	return cfg
 }
 
