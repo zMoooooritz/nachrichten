@@ -117,11 +117,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tagesschau.News:
 		m.news = tagesschau.News(msg)
 		m.InitLists([][]tagesschau.NewsEntry{m.news.NationalNews, m.news.RegionalNews})
-		width, _ := m.listSelectorDims()
-		for i := range m.lists {
-			m.lists[i].Title = lipgloss.PlaceHorizontal(width, lipgloss.Center, headerText)
-			m.lists[i].Styles.Title = m.style.TitleActiveStyle
-		}
+		m.resizeLists()
 		m.ready = true
 	case tea.KeyMsg:
 		switch {
@@ -194,23 +190,23 @@ func (m *Model) updateSizes(width, height int) {
 
 	m.reader.YPosition = m.readerHeaderHeight()
 
-	for i := range m.lists {
-		m.lists[i].SetSize(m.listOuterDims())
-		w, _ := m.listInnerDims()
-		m.lists[i].Title = lipgloss.PlaceHorizontal(w, lipgloss.Center, headerText)
-	}
+	m.resizeLists()
 
 	m.reader.Width, m.reader.Height = m.readerDims()
 	m.help.Width = m.width
 }
 
-func (m Model) listOuterDims() (int, int) {
-	return m.width / 3, m.height - m.helperHeight() - 5
+func (m *Model) resizeLists() {
+	w, _ := m.listSelectorDims()
+	for i := range m.lists {
+		m.lists[i].SetSize(m.listOuterDims())
+		m.lists[i].Title = lipgloss.PlaceHorizontal(w, lipgloss.Center, headerText)
+		m.lists[i].Styles.Title = m.style.TitleActiveStyle
+	}
 }
 
-func (m Model) listInnerDims() (int, int) {
-	w, h := m.listOuterDims()
-	return w - 6, h
+func (m Model) listOuterDims() (int, int) {
+	return m.width / 3, m.height - m.helperHeight() - 5
 }
 
 func (m Model) listSelectorDims() (int, int) {
@@ -220,7 +216,7 @@ func (m Model) listSelectorDims() (int, int) {
 
 func (m Model) readerDims() (int, int) {
 	lw, _ := m.listOuterDims()
-	return m.width - lw - 7, m.height - m.readerHeaderHeight() - m.readerFooterHeight() - m.helperHeight()
+	return m.width - lw - 6, m.height - m.readerHeaderHeight() - m.readerFooterHeight() - m.helperHeight()
 }
 
 func (m Model) readerHeaderHeight() int {
