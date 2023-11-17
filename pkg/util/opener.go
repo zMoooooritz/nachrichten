@@ -7,27 +7,39 @@ import (
 	"github.com/zMoooooritz/nachrichten/pkg/config"
 )
 
-func OpenUrl(t config.ResourceType, c config.Configuration, url string) error {
+type Opener struct {
+	configuration config.Configuration
+}
+
+func NewOpener(configuration config.Configuration) Opener {
+	return Opener{
+		configuration: configuration,
+	}
+}
+
+func (o Opener) OpenUrl(t config.ResourceType, url string) {
 	var appConfig config.ApplicationConfig
 
 	switch t {
 	case config.TypeImage:
-		appConfig = c.AppConfig.Image
+		appConfig = o.configuration.AppConfig.Image
 	case config.TypeAudio:
-		appConfig = c.AppConfig.Audio
+		appConfig = o.configuration.AppConfig.Audio
 	case config.TypeVideo:
-		appConfig = c.AppConfig.Video
+		appConfig = o.configuration.AppConfig.Video
 	case config.TypeHTML:
-		appConfig = c.AppConfig.HTML
+		appConfig = o.configuration.AppConfig.HTML
 	default:
-		return defaultOpenUrl(url)
+		defaultOpenUrl(url)
+		return
 	}
 
 	cConfig := appConfig
 	cConfig.Args = append([]string(nil), appConfig.Args...)
 
 	if cConfig.Path == "" || len(cConfig.Args) == 0 {
-		return defaultOpenUrl(url)
+		defaultOpenUrl(url)
+		return
 	}
 
 	for i, arg := range cConfig.Args {
@@ -35,10 +47,10 @@ func OpenUrl(t config.ResourceType, c config.Configuration, url string) error {
 			cConfig.Args[i] = url
 		}
 	}
-	return exec.Command(cConfig.Path, cConfig.Args...).Start()
+	_ = exec.Command(cConfig.Path, cConfig.Args...).Start()
 }
 
-func defaultOpenUrl(url string) error {
+func defaultOpenUrl(url string) {
 	var cmd string
 	var args []string
 
@@ -52,5 +64,5 @@ func defaultOpenUrl(url string) error {
 		cmd = "xdg-open"
 	}
 	args = append(args, url)
-	return exec.Command(cmd, args...).Start()
+	_ = exec.Command(cmd, args...).Start()
 }
