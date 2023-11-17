@@ -2,13 +2,11 @@ package tui
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/config"
@@ -34,7 +32,7 @@ var (
 )
 
 type Model struct {
-	configuration      config.Configuration
+	opener             util.Opener
 	news               tagesschau.News
 	keymap             KeyMap
 	style              config.Style
@@ -44,10 +42,8 @@ type Model struct {
 	lists              []list.Model
 	listsActiveIndeces []int
 	activeListIndex    int
-	reader             viewport.Model
+	reader             Reader
 	spinner            spinner.Model
-	focus              int
-	readerFocused      bool
 	width              int
 	height             int
 }
@@ -79,15 +75,14 @@ func InitialModel(c config.Configuration) Model {
 	}
 
 	m := Model{
-		configuration:      c,
+		opener:             util.NewOpener(c),
 		keymap:             GetKeyMap(),
 		style:              style,
 		ready:              false,
 		help:               NewHelper(style),
 		helpMode:           helpMode,
-		reader:             viewport.New(0, 0),
+		reader:             NewReader(style),
 		spinner:            NewDotSpinner(),
-		focus:              0,
 		lists:              EmptyLists(style, 2),
 		listsActiveIndeces: []int{},
 		activeListIndex:    0,
@@ -119,6 +114,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.InitLists([][]tagesschau.NewsEntry{m.news.NationalNews, m.news.RegionalNews})
 		m.resizeLists()
 		m.ready = true
+		m.updateDisplayedArticle()
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keymap.quit):
@@ -133,32 +129,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.updateSizes(m.width, m.height)
 		case key.Matches(msg, m.keymap.right):
-			m.readerFocused = true
+			m.reader.SetFocused(true)
 		case key.Matches(msg, m.keymap.left):
-			m.readerFocused = false
+			m.reader.SetFocused(false)
 		case key.Matches(msg, m.keymap.next):
-			m.readerFocused = false
+			m.reader.SetFocused(false)
 			m.activeListIndex = (m.activeListIndex + 1) % len(m.lists)
+			m.updateDisplayedArticle()
+		case key.Matches(msg, m.keymap.prev):
+			m.reader.SetFocused(false)
+			m.activeListIndex = (len(m.lists) + m.activeListIndex - 1) % len(m.lists)
+			m.updateDisplayedArticle()
 		case key.Matches(msg, m.keymap.start):
-			if m.readerFocused {
+			if m.reader.IsFocused() {
 				m.reader.GotoTop()
 			}
 		case key.Matches(msg, m.keymap.end):
-			if m.readerFocused {
+			if m.reader.IsFocused() {
 				m.reader.GotoBottom()
 			}
-		case key.Matches(msg, m.keymap.prev):
-			m.readerFocused = false
-			m.activeListIndex = (len(m.lists) + m.activeListIndex - 1) % len(m.lists)
 		case key.Matches(msg, m.keymap.open):
-			article := m.SelectedArticle()
-			_ = util.OpenUrl(config.TypeHTML, m.configuration, article.URL)
+			article := m.selectedArticle()
+			m.opener.OpenUrl(config.TypeHTML, article.URL)
 		case key.Matches(msg, m.keymap.video):
-			article := m.SelectedArticle()
-			_ = util.OpenUrl(config.TypeVideo, m.configuration, article.Video.VideoURLs.Big)
+			article := m.selectedArticle()
+			m.opener.OpenUrl(config.TypeVideo, article.Video.VideoURLs.Big)
 		case key.Matches(msg, m.keymap.shortNews):
 			url, _ := tagesschau.GetShortNewsURL()
-			_ = util.OpenUrl(config.TypeVideo, m.configuration, url)
+			m.opener.OpenUrl(config.TypeVideo, url)
 		}
 	case tea.WindowSizeMsg:
 		m.updateSizes(msg.Width, msg.Height)
@@ -171,33 +169,41 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	}
 
-	if m.readerFocused {
+	if m.reader.IsFocused() {
 		m.reader, cmd = m.reader.Update(msg)
 		cmds = append(cmds, cmd)
 	} else {
 		m.lists[m.activeListIndex], cmd = m.lists[m.activeListIndex].Update(msg)
 		cmds = append(cmds, cmd)
-		m.listsActiveIndeces[m.activeListIndex] = m.lists[m.activeListIndex].Index()
-		m.reader.SetContent(util.ContentToText(m.SelectedArticle().Content, m.reader.Width, m.style))
+		if m.listsActiveIndeces[m.activeListIndex] != m.lists[m.activeListIndex].Index() {
+			m.listsActiveIndeces[m.activeListIndex] = m.lists[m.activeListIndex].Index()
+			m.updateDisplayedArticle()
+		}
 	}
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m *Model) updateDisplayedArticle() {
+	article := m.selectedArticle()
+	text := tagesschau.ContentToParagraphs(article.Content)
+	m.reader.SetContent(text)
+	m.reader.SetHeaderContent(article.Topline, article.Date.Format(germanDateFormat))
 }
 
 func (m *Model) updateSizes(width, height int) {
 	m.width = width
 	m.height = height
 
-	m.reader.YPosition = m.readerHeaderHeight()
-
 	m.resizeLists()
 
-	m.reader.Width, m.reader.Height = m.readerDims()
+	w, _ := m.listOuterDims()
+	m.reader.SetDims(m.width-w-6, m.height-m.helperHeight())
 	m.help.Width = m.width
 }
 
 func (m *Model) resizeLists() {
-	w, _ := m.listSelectorDims()
+	w, _ := m.listInnerDims()
 	for i := range m.lists {
 		m.lists[i].SetSize(m.listOuterDims())
 		m.lists[i].Title = lipgloss.PlaceHorizontal(w, lipgloss.Center, headerText)
@@ -209,22 +215,9 @@ func (m Model) listOuterDims() (int, int) {
 	return m.width / 3, m.height - m.helperHeight() - 5
 }
 
-func (m Model) listSelectorDims() (int, int) {
+func (m Model) listInnerDims() (int, int) {
 	w, h := m.listOuterDims()
 	return w - 4, h
-}
-
-func (m Model) readerDims() (int, int) {
-	lw, _ := m.listOuterDims()
-	return m.width - lw - 6, m.height - m.readerHeaderHeight() - m.readerFooterHeight() - m.helperHeight()
-}
-
-func (m Model) readerHeaderHeight() int {
-	return lipgloss.Height(m.headerView("", ""))
-}
-
-func (m Model) readerFooterHeight() int {
-	return lipgloss.Height(m.footerView())
 }
 
 func (m Model) helperHeight() int {
@@ -234,7 +227,7 @@ func (m Model) helperHeight() int {
 	return 0
 }
 
-func (m Model) SelectedArticle() tagesschau.NewsEntry {
+func (m Model) selectedArticle() tagesschau.NewsEntry {
 	var article tagesschau.NewsEntry
 	if m.activeListIndex == 0 {
 		article = m.news.NationalNews[m.listsActiveIndeces[m.activeListIndex]]
@@ -250,14 +243,13 @@ func (m Model) View() string {
 		return screenCentered(m.width, m.height).Render(content)
 	}
 
-	listHeader := m.listSelectorView([]string{nationalHeaderText, regionalHeaderText}, m.activeListIndex)
+	listHeader := m.listView([]string{nationalHeaderText, regionalHeaderText}, m.activeListIndex)
 	listStyle := m.style.ListActiveStyle
-	if m.readerFocused {
+	if m.reader.IsFocused() {
 		listStyle = m.style.ListInactiveStyle
 	}
 	list := listStyle.Render(lipgloss.JoinVertical(lipgloss.Left, listHeader, m.lists[m.activeListIndex].View()))
-	article := m.SelectedArticle()
-	reader := fmt.Sprintf("%s\n%s\n%s", m.headerView(article.Topline, article.Date.Format(germanDateFormat)), m.reader.View(), m.footerView())
+	reader := m.reader.View()
 
 	help := ""
 	if m.helpMode > 0 {
@@ -267,8 +259,8 @@ func (m Model) View() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, list, reader) + help
 }
 
-func (m Model) listSelectorView(names []string, activeIndex int) string {
-	width, _ := m.listSelectorDims()
+func (m Model) listView(names []string, activeIndex int) string {
+	width, _ := m.listInnerDims()
 	cellWidth := width / len(names)
 	var widths []int
 	for i := 0; i < len(names)-1; i++ {
@@ -284,35 +276,4 @@ func (m Model) listSelectorView(names []string, activeIndex int) string {
 		result += style.Render(lipgloss.PlaceHorizontal(widths[i], lipgloss.Center, n))
 	}
 	return lipgloss.NewStyle().PaddingLeft(2).Render(result)
-}
-
-func (m Model) headerView(name string, date string) string {
-	titleStyle := m.style.ReaderTitleInactiveStyle
-	lineStyle := m.style.InactiveStyle
-	dateStyle := m.style.ReaderInfoInactiveStyle
-	if m.readerFocused {
-		titleStyle = m.style.ReaderTitleActiveStyle
-		lineStyle = m.style.ActiveStyle
-		dateStyle = m.style.ReaderInfoActiveStyle
-	}
-
-	title := titleStyle.Render(name)
-	date = dateStyle.Render(date)
-	line := lineStyle.Render(strings.Repeat("─", util.Max(0, m.reader.Width-lipgloss.Width(title)-lipgloss.Width(date))))
-
-	return lipgloss.JoinHorizontal(lipgloss.Center, title, line, date)
-}
-
-func (m Model) footerView() string {
-	infoStyle := m.style.ReaderInfoInactiveStyle
-	lineStyle := m.style.InactiveStyle
-	if m.readerFocused {
-		infoStyle = m.style.ReaderInfoActiveStyle
-		lineStyle = m.style.ActiveStyle
-	}
-
-	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.reader.ScrollPercent()*100))
-	line := lineStyle.Render(strings.Repeat("─", util.Max(0, m.reader.Width-lipgloss.Width(info))))
-
-	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
 }
