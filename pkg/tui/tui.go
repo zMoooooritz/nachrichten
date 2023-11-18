@@ -113,6 +113,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.prev):
 			m.selector.PrevList()
 			m.setFocus(false)
+		case key.Matches(msg, m.keymap.full):
+			m.reader.SetFullScreen(!m.reader.IsFullScreen())
+			m.updateSizes(m.width, m.height)
+			m.updateDisplayedArticle()
 		case key.Matches(msg, m.keymap.start):
 			if m.reader.IsFocused() {
 				m.reader.GotoTop()
@@ -142,7 +146,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	}
 
-	if m.reader.IsFocused() {
+	if m.reader.IsFocused() || m.reader.IsFullScreen() {
 		m.reader, cmd = m.reader.Update(msg)
 		cmds = append(cmds, cmd)
 	} else {
@@ -181,7 +185,14 @@ func (m *Model) updateSizes(width, height int) {
 	m.selector.SetDims(m.width/3, m.height-m.helperHeight()-5)
 	m.selector.ResizeLists()
 
-	m.reader.SetDims(m.width-m.width/3-6, m.height-m.helperHeight())
+	if m.reader.IsFullScreen() {
+		m.selector.SetVisible(false)
+		m.reader.SetDims(m.width, m.height-m.helperHeight())
+	} else {
+		m.selector.SetVisible(true)
+		m.reader.SetDims(m.width-m.width/3-6, m.height-m.helperHeight())
+	}
+
 	m.help.Width = m.width
 }
 

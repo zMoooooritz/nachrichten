@@ -17,11 +17,12 @@ const (
 )
 
 type Reader struct {
-	style       config.Style
-	isFocused   bool
-	toplineText string
-	dateText    string
-	viewport    viewport.Model
+	style        config.Style
+	isFocused    bool
+	isFullScreen bool
+	toplineText  string
+	dateText     string
+	viewport     viewport.Model
 }
 
 func NewReader(s config.Style) Reader {
@@ -45,6 +46,14 @@ func (r *Reader) SetFocused(isFocused bool) {
 
 func (r *Reader) IsFocused() bool {
 	return r.isFocused
+}
+
+func (r *Reader) SetFullScreen(isFullScreen bool) {
+	r.isFullScreen = isFullScreen
+}
+
+func (r *Reader) IsFullScreen() bool {
+	return r.isFullScreen
 }
 
 func (r *Reader) SetDims(w, h int) {
@@ -81,7 +90,7 @@ func (r Reader) headerView() string {
 	titleStyle := r.style.ReaderTitleInactiveStyle
 	lineStyle := r.style.InactiveStyle
 	dateStyle := r.style.ReaderInfoInactiveStyle
-	if r.isFocused {
+	if r.isFocused || r.isFullScreen {
 		titleStyle = r.style.ReaderTitleActiveStyle
 		lineStyle = r.style.ActiveStyle
 		dateStyle = r.style.ReaderInfoActiveStyle
@@ -97,7 +106,7 @@ func (r Reader) headerView() string {
 func (r Reader) footerView() string {
 	infoStyle := r.style.ReaderInfoInactiveStyle
 	lineStyle := r.style.InactiveStyle
-	if r.isFocused {
+	if r.isFocused || r.isFullScreen {
 		infoStyle = r.style.ReaderInfoActiveStyle
 		lineStyle = r.style.ActiveStyle
 	}

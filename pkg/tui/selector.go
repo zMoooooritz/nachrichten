@@ -21,6 +21,7 @@ type Selector struct {
 	listsActiveIndeces []int
 	activeListIndex    int
 	isFocused          bool
+	isVisible          bool
 	fullWidth          int
 	headerWidth        int
 	height             int
@@ -33,6 +34,7 @@ func NewSelector(s config.Style) Selector {
 		listsActiveIndeces: []int{},
 		activeListIndex:    0,
 		isFocused:          true,
+		isVisible:          true,
 	}
 }
 
@@ -82,6 +84,10 @@ func (s *Selector) SetFocused(isFocused bool) {
 	s.isFocused = isFocused
 }
 
+func (s *Selector) SetVisible(isVisible bool) {
+	s.isVisible = isVisible
+}
+
 func (s *Selector) SetDims(w, h int) {
 	s.fullWidth = w
 	s.headerWidth = w - 4
@@ -117,6 +123,10 @@ func (s Selector) Update(msg tea.Msg) (Selector, tea.Cmd) {
 }
 
 func (s Selector) View() string {
+	if !s.isVisible {
+		return ""
+	}
+
 	listHeader := s.listView([]string{nationalHeaderText, regionalHeaderText}, s.activeListIndex)
 	listStyle := s.style.ListActiveStyle
 	if !s.isFocused {
