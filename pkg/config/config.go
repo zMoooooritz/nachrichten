@@ -51,16 +51,19 @@ const (
 )
 
 type Config struct {
-	file string
+	ConfigFile string
+	LogFile    string
 }
 
 func Init() Config {
 
-	configFile := flag.String("config", "~/.config/nachrichten/config.yaml", "Path to configuration file")
+	configFile := flag.String("config", "", "Path to configuration file")
+	logFile := flag.String("debug", "", "Path to log file")
 
 	flag.Parse()
 	cfg := Config{
-		file: *configFile,
+		ConfigFile: *configFile,
+		LogFile:    *logFile,
 	}
 	return cfg
 }
@@ -68,7 +71,7 @@ func Init() Config {
 func (c Config) Load() Configuration {
 	config := defaultConfiguration()
 
-	data, err := os.ReadFile(c.file)
+	data, err := os.ReadFile(c.ConfigFile)
 	if err != nil {
 		return config
 	}
