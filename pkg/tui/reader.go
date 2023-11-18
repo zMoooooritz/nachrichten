@@ -3,12 +3,17 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/config"
 	"github.com/zMoooooritz/nachrichten/pkg/util"
+)
+
+const (
+	germanDateFormat string = "15:04 02.01.06"
 )
 
 type Reader struct {
@@ -53,9 +58,9 @@ func (r *Reader) SetContent(paragraphs []string) {
 	r.viewport.SetContent(repr)
 }
 
-func (r *Reader) SetHeaderContent(topline string, date string) {
+func (r *Reader) SetHeaderContent(topline string, date time.Time) {
 	r.toplineText = topline
-	r.dateText = date
+	r.dateText = date.Format(germanDateFormat)
 }
 
 func (r Reader) Init() tea.Cmd {
