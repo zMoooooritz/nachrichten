@@ -6,10 +6,11 @@ type KeyMap struct {
 	quit      key.Binding
 	right     key.Binding
 	left      key.Binding
-	next      key.Binding
 	up        key.Binding
 	down      key.Binding
 	prev      key.Binding
+	next      key.Binding
+	full      key.Binding
 	start     key.Binding
 	end       key.Binding
 	open      key.Binding
@@ -40,14 +41,6 @@ func GetKeyMap() KeyMap {
 			key.WithKeys("k", "up"),
 			key.WithHelp("↑/k", "up"),
 		),
-		start: key.NewBinding(
-			key.WithKeys("g", "home"),
-			key.WithHelp("g/home", "start"),
-		),
-		end: key.NewBinding(
-			key.WithKeys("G", "end"),
-			key.WithHelp("G/end", "end"),
-		),
 		next: key.NewBinding(
 			key.WithKeys("tab"),
 			key.WithHelp("tab", "next"),
@@ -55,6 +48,18 @@ func GetKeyMap() KeyMap {
 		prev: key.NewBinding(
 			key.WithKeys("shift+tab"),
 			key.WithHelp("shift+tab", "prev"),
+		),
+		full: key.NewBinding(
+			key.WithKeys("f"),
+			key.WithHelp("f", "full"),
+		),
+		start: key.NewBinding(
+			key.WithKeys("g", "home"),
+			key.WithHelp("g/home", "start"),
+		),
+		end: key.NewBinding(
+			key.WithKeys("G", "end"),
+			key.WithHelp("G/end", "end"),
 		),
 		open: key.NewBinding(
 			key.WithKeys("o"),
@@ -85,10 +90,11 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 		{k.right},
 		{k.up},
 		{k.down},
-		{k.start},
-		{k.end},
 		{k.next},
 		{k.prev},
+		{k.full},
+		{k.start},
+		{k.end},
 		{k.open},
 		{k.video},
 		{k.shortNews},
