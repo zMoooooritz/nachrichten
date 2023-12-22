@@ -1,7 +1,6 @@
 package config
 
 import (
-	"flag"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -50,28 +49,10 @@ const (
 	TypeHTML
 )
 
-type Config struct {
-	ConfigFile string
-	LogFile    string
-}
-
-func Init() Config {
-
-	configFile := flag.String("config", "", "Path to configuration file")
-	logFile := flag.String("debug", "", "Path to log file")
-
-	flag.Parse()
-	cfg := Config{
-		ConfigFile: *configFile,
-		LogFile:    *logFile,
-	}
-	return cfg
-}
-
-func (c Config) Load() Configuration {
+func Load(configFile string) Configuration {
 	config := defaultConfiguration()
 
-	data, err := os.ReadFile(c.ConfigFile)
+	data, err := os.ReadFile(configFile)
 	if err != nil {
 		return config
 	}
