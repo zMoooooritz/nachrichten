@@ -2,12 +2,11 @@
 nachrichten
 ======
 
-<p align="center">
-    <a href="https://github.com/zMoooooritz/nachrichten/releases"><img src="https://img.shields.io/github/v/release/zMoooooritz/nachrichten" alt="Latest Release"></a>
-    <a href="https://github.com/zMoooooritz/nachrichten/actions"><img src="https://github.com/zMoooooritz/nachrichten/workflows/build/badge.svg" alt="Build Status"></a>
-    <a href="https://goreportcard.com/report/github.com/zMoooooritz/nachrichten"><img src="https://goreportcard.com/badge/zMoooooritz/nachrichten" alt="Go ReportCard"></a>
-    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-</p>
+[![Latest Release](https://img.shields.io/github/release/zMoooooritz/nachrichten.svg?style=for-the-badge)](https://github.com/zMoooooritz/nachrichten/releases)
+[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge)](https://pkg.go.dev/github.com/zMoooooritz/nachrichten)
+[![Software License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](/LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/zMoooooritz/nachrichten/build.yml?branch=master&style=for-the-badge)](https://github.com/zMoooooritz/nachrichten/actions)
+[![Go ReportCard](https://goreportcard.com/badge/github.com/zMoooooritz/nachrichten?style=for-the-badge)](https://goreportcard.com/report/zMoooooritz/nachrichten)
 
 A small TUI for reading German news
 
