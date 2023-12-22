@@ -1,11 +1,14 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/config"
 	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
+	"github.com/zMoooooritz/nachrichten/pkg/util"
 )
 
 const (
@@ -24,7 +27,8 @@ type Selector struct {
 	isVisible          bool
 	fullWidth          int
 	headerWidth        int
-	height             int
+	fullHeight         int
+	listHeight         int
 }
 
 func NewSelector(s config.Style) Selector {
@@ -43,7 +47,7 @@ func InitLists(s config.Style, count int) []list.Model {
 	for i := 0; i < count; i++ {
 		newList := list.New([]list.Item{}, NewNewsDelegate(s), 0, 0)
 		newList.SetFilteringEnabled(false)
-		newList.SetShowTitle(true)
+		newList.SetShowTitle(false)
 		newList.SetShowStatusBar(false)
 		newList.SetShowHelp(false)
 		lists = append(lists, newList)
@@ -66,9 +70,7 @@ func (s *Selector) FillLists(news tagesschau.News) {
 
 func (s *Selector) ResizeLists() {
 	for i := range s.lists {
-		s.lists[i].SetSize(s.fullWidth, s.height)
-		s.lists[i].Title = lipgloss.PlaceHorizontal(s.headerWidth, lipgloss.Center, headerText)
-		s.lists[i].Styles.Title = s.style.TitleActiveStyle
+		s.lists[i].SetSize(s.fullWidth, s.listHeight)
 	}
 }
 
@@ -91,7 +93,8 @@ func (s *Selector) SetVisible(isVisible bool) {
 func (s *Selector) SetDims(w, h int) {
 	s.fullWidth = w
 	s.headerWidth = w - 4
-	s.height = h
+	s.fullHeight = h
+	s.listHeight = h - 4
 }
 
 func (s *Selector) GetSelectedArticle() tagesschau.NewsEntry {
@@ -127,15 +130,36 @@ func (s Selector) View() string {
 		return ""
 	}
 
-	listHeader := s.listView([]string{nationalHeaderText, regionalHeaderText}, s.activeListIndex)
-	listStyle := s.style.ListActiveStyle
-	if !s.isFocused {
-		listStyle = s.style.ListInactiveStyle
+	listSelect := s.listSelectView([]string{nationalHeaderText, regionalHeaderText}, s.activeListIndex)
+	listHead := s.listHeadView()
+
+	style := s.style.ListInactiveStyle
+	if s.isFocused {
+		style = s.style.ListActiveStyle
 	}
-	return listStyle.Render(lipgloss.JoinVertical(lipgloss.Left, listHeader, s.lists[s.activeListIndex].View()))
+
+	return style.Render(lipgloss.JoinVertical(lipgloss.Left, listHead, listSelect, s.lists[s.activeListIndex].View()))
 }
 
-func (s Selector) listView(names []string, activeIndex int) string {
+func (s Selector) listHeadView() string {
+	fillCharacter := config.SingleFillCharacter
+	lineStyle := s.style.InactiveStyle
+	headerStyle := s.style.ListHeaderInactiveStyle
+	if s.isFocused {
+		fillCharacter = config.DoubleFillCharacter
+		lineStyle = s.style.ActiveStyle
+		headerStyle = s.style.ListHeaderActiveStyle
+	}
+
+	headerWidth := util.Max(0, s.headerWidth-lipgloss.Width(headerText))
+	leftWidth, rightWidth := headerWidth/2, headerWidth-headerWidth/2
+	leftLine := lineStyle.Render(strings.Repeat(fillCharacter, leftWidth))
+	rightLine := lineStyle.Render(strings.Repeat(fillCharacter, rightWidth))
+	newsHeader := headerStyle.Render(headerText)
+	return lipgloss.JoinHorizontal(lipgloss.Center, leftLine, newsHeader, rightLine)
+}
+
+func (s Selector) listSelectView(names []string, activeIndex int) string {
 	cellWidth := s.headerWidth / len(names)
 	var widths []int
 	for i := 0; i < len(names)-1; i++ {
@@ -147,8 +171,9 @@ func (s Selector) listView(names []string, activeIndex int) string {
 		style := s.style.TitleInactiveStyle
 		if i == activeIndex {
 			style = s.style.TitleActiveStyle
+			n = AddMarkingToText(n)
 		}
 		result += style.Render(lipgloss.PlaceHorizontal(widths[i], lipgloss.Center, n))
 	}
-	return lipgloss.NewStyle().PaddingLeft(2).Render(result)
+	return lipgloss.NewStyle().Padding(1, 0, 1, 2).Render(result)
 }

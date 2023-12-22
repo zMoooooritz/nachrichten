@@ -19,3 +19,7 @@ func NewHelper(s config.Style) help.Model {
 	h.Styles.FullKey = s.InactiveStyle
 	return h
 }
+
+func AddMarkingToText(str string) string {
+	return "> " + str + " <"
+}
