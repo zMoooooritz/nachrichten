@@ -11,12 +11,11 @@ import (
 	"github.com/zMoooooritz/nachrichten/pkg/util"
 )
 
-func Run() {
+func Run(configFile string, logFile string) {
 
-	cfg := config.Init()
-	configuration := cfg.Load()
-	if cfg.LogFile != "" {
-		err := util.SetLogFile(cfg.LogFile)
+	configuration := config.Load(configFile)
+	if logFile != "" {
+		err := util.SetLogFile(logFile)
 		log.Fatalln("Error occoured while setting up logger: ", err)
 	}
 	util.Logger.Println("Application started.")
@@ -26,7 +25,7 @@ func Run() {
 		// tea.WithMouseCellMotion(),
 	)
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
+		fmt.Printf("There's been an error: %v", err)
 		os.Exit(1)
 	}
 }
