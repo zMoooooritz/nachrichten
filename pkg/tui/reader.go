@@ -90,15 +90,17 @@ func (r Reader) headerView() string {
 	titleStyle := r.style.ReaderTitleInactiveStyle
 	lineStyle := r.style.InactiveStyle
 	dateStyle := r.style.ReaderInfoInactiveStyle
+	fillCharacter := config.SingleFillCharacter
 	if r.isFocused || r.isFullScreen {
 		titleStyle = r.style.ReaderTitleActiveStyle
 		lineStyle = r.style.ActiveStyle
 		dateStyle = r.style.ReaderInfoActiveStyle
+		fillCharacter = config.DoubleFillCharacter
 	}
 
 	title := titleStyle.Render(r.toplineText)
 	date := dateStyle.Render(r.dateText)
-	line := lineStyle.Render(strings.Repeat("─", util.Max(0, r.viewport.Width-lipgloss.Width(title)-lipgloss.Width(date))))
+	line := lineStyle.Render(strings.Repeat(fillCharacter, util.Max(0, r.viewport.Width-lipgloss.Width(title)-lipgloss.Width(date))))
 
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line, date)
 }
@@ -106,13 +108,15 @@ func (r Reader) headerView() string {
 func (r Reader) footerView() string {
 	infoStyle := r.style.ReaderInfoInactiveStyle
 	lineStyle := r.style.InactiveStyle
+	fillCharacter := config.SingleFillCharacter
 	if r.isFocused || r.isFullScreen {
 		infoStyle = r.style.ReaderInfoActiveStyle
 		lineStyle = r.style.ActiveStyle
+		fillCharacter = config.DoubleFillCharacter
 	}
 
 	info := infoStyle.Render(fmt.Sprintf("%3.f%%", r.viewport.ScrollPercent()*100))
-	line := lineStyle.Render(strings.Repeat("─", util.Max(0, r.viewport.Width-lipgloss.Width(info))))
+	line := lineStyle.Render(strings.Repeat(fillCharacter, util.Max(0, r.viewport.Width-lipgloss.Width(info))))
 
 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
 }

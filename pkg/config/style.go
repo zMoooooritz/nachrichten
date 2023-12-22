@@ -6,18 +6,22 @@ import (
 )
 
 const (
-	Ellipsis = "…"
+	Ellipsis            = "…"
+	SingleFillCharacter = "─"
+	DoubleFillCharacter = "═"
 )
 
 type Style struct {
 	ActiveStyle            lipgloss.Style
 	TitleActiveStyle       lipgloss.Style
+	ListHeaderActiveStyle  lipgloss.Style
 	ListActiveStyle        lipgloss.Style
 	ReaderTitleActiveStyle lipgloss.Style
 	ReaderInfoActiveStyle  lipgloss.Style
 
 	InactiveStyle            lipgloss.Style
 	TitleInactiveStyle       lipgloss.Style
+	ListHeaderInactiveStyle  lipgloss.Style
 	ListInactiveStyle        lipgloss.Style
 	ReaderTitleInactiveStyle lipgloss.Style
 	ReaderInfoInactiveStyle  lipgloss.Style
@@ -60,23 +64,37 @@ func NewsStyle(t ThemeConfig) (s Style) {
 	selectedSecondaryColor := lipgloss.Color(t.SelectedSecondaryColor)
 	breakingColor := lipgloss.Color(t.BreakingColor)
 
+	listBaseStyle := lipgloss.NewStyle().Padding(0, 1, 1, 1).Margin(1, 1, 0, 1).BorderLeft(true).BorderBottom(true).BorderRight(true).BorderTop(false)
+
 	s.ActiveStyle = lipgloss.NewStyle().Foreground(primaryColor).BorderForeground(primaryColor)
 	s.TitleActiveStyle = lipgloss.NewStyle().Background(primaryColor).Foreground(secondaryColor)
-	s.ListActiveStyle = lipgloss.NewStyle().BorderForeground(primaryColor).Padding(1, 1, 1, 1).Margin(0, 1, 0, 1).BorderStyle(lipgloss.RoundedBorder())
+	s.ListActiveStyle = listBaseStyle.Copy().BorderForeground(primaryColor).BorderStyle(lipgloss.DoubleBorder())
+	s.ListHeaderActiveStyle = func() lipgloss.Style {
+		b := lipgloss.DoubleBorder()
+		b.Right = "╠"
+		b.Left = "╣"
+		return s.ActiveStyle.Copy().BorderStyle(b).Padding(0, 1)
+	}()
 	s.ReaderTitleActiveStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Right = "├"
+		b := lipgloss.DoubleBorder()
+		b.Right = "╠"
 		return s.ActiveStyle.Copy().BorderStyle(b).Padding(0, 1)
 	}()
 	s.ReaderInfoActiveStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Left = "┤"
+		b := lipgloss.DoubleBorder()
+		b.Left = "╣"
 		return s.ReaderTitleActiveStyle.Copy().BorderStyle(b)
 	}()
 
 	s.InactiveStyle = lipgloss.NewStyle().Foreground(secondaryColor).BorderForeground(secondaryColor)
 	s.TitleInactiveStyle = lipgloss.NewStyle().Foreground(secondaryColor)
-	s.ListInactiveStyle = lipgloss.NewStyle().BorderForeground(secondaryColor).Padding(1, 1, 1, 1).Margin(0, 1, 0, 1).BorderStyle(lipgloss.RoundedBorder())
+	s.ListInactiveStyle = listBaseStyle.Copy().BorderForeground(secondaryColor).BorderStyle(lipgloss.RoundedBorder())
+	s.ListHeaderInactiveStyle = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Right = "├"
+		b.Left = "┤"
+		return s.InactiveStyle.Copy().BorderStyle(b).Padding(0, 1)
+	}()
 	s.ReaderTitleInactiveStyle = func() lipgloss.Style {
 		b := lipgloss.RoundedBorder()
 		b.Right = "├"
