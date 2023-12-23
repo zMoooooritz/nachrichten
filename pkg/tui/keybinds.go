@@ -13,6 +13,7 @@ type KeyMap struct {
 	full      key.Binding
 	start     key.Binding
 	end       key.Binding
+	image     key.Binding
 	open      key.Binding
 	video     key.Binding
 	shortNews key.Binding
@@ -61,6 +62,10 @@ func GetKeyMap() KeyMap {
 			key.WithKeys("G", "end"),
 			key.WithHelp("G/end", "end"),
 		),
+		image: key.NewBinding(
+			key.WithKeys("i"),
+			key.WithHelp("i", "image"),
+		),
 		open: key.NewBinding(
 			key.WithKeys("o"),
 			key.WithHelp("o", "open"),
@@ -95,6 +100,7 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 		{k.full},
 		{k.start},
 		{k.end},
+		{k.image},
 		{k.open},
 		{k.video},
 		{k.shortNews},
