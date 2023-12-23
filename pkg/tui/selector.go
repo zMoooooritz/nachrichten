@@ -79,6 +79,10 @@ func (s *Selector) PrevList() {
 	s.activeListIndex = (len(s.lists) + s.activeListIndex - 1) % len(s.lists)
 }
 
+func (s *Selector) IsFocused() bool {
+	return s.isFocused
+}
+
 func (s *Selector) SetFocused(isFocused bool) {
 	s.isFocused = isFocused
 }

@@ -12,12 +12,9 @@ import (
 	"github.com/zMoooooritz/nachrichten/pkg/util"
 )
 
-const (
-	germanDateFormat string = "15:04 02.01.06"
-)
-
 type Reader struct {
 	style        config.Style
+	isActive     bool
 	isFocused    bool
 	isFullScreen bool
 	toplineText  string
@@ -28,6 +25,7 @@ type Reader struct {
 func NewReader(s config.Style) Reader {
 	return Reader{
 		style:    s,
+		isActive: true,
 		viewport: viewport.New(0, 0),
 	}
 }
@@ -38,6 +36,14 @@ func (r *Reader) GotoTop() {
 
 func (r *Reader) GotoBottom() {
 	r.viewport.GotoBottom()
+}
+
+func (r *Reader) SetActive(isActive bool) {
+	r.isActive = isActive
+}
+
+func (r *Reader) IsActive() bool {
+	return r.isActive
 }
 
 func (r *Reader) SetFocused(isFocused bool) {
@@ -83,6 +89,9 @@ func (r Reader) Update(msg tea.Msg) (Reader, tea.Cmd) {
 }
 
 func (r Reader) View() string {
+	if !r.isActive {
+		return ""
+	}
 	return fmt.Sprintf("%s\n%s\n%s", r.headerView(), r.viewport.View(), r.footerView())
 }
 

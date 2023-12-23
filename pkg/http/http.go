@@ -1,6 +1,7 @@
 package http
 
 import (
+	"image"
 	"io"
 	"net/http"
 	"time"
@@ -11,11 +12,13 @@ const (
 	agentName   string        = "nachrichten-agent"
 )
 
-func FetchURL(url string) ([]byte, error) {
-	client := http.Client{
+var (
+	client http.Client = http.Client{
 		Timeout: time.Second * httpTimeout,
 	}
+)
 
+func FetchURL(url string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -38,4 +41,29 @@ func FetchURL(url string) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+func LoadImage(url string) (image.Image, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", agentName)
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	img, _, err := image.Decode(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return img, nil
 }
