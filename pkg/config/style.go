@@ -38,6 +38,9 @@ type Style struct {
 	ItemBreakingTitle lipgloss.Style
 	ItemBreakingDesc  lipgloss.Style
 
+	ActiveTabBorder   lipgloss.Border
+	InactiveTabBorder lipgloss.Border
+
 	ReaderStyle ansi.StyleConfig
 }
 
@@ -64,17 +67,12 @@ func NewsStyle(t ThemeConfig) (s Style) {
 	selectedSecondaryColor := lipgloss.Color(t.SelectedSecondaryColor)
 	breakingColor := lipgloss.Color(t.BreakingColor)
 
-	listBaseStyle := lipgloss.NewStyle().Padding(0, 1, 1, 1).Margin(1, 1, 0, 1).BorderLeft(true).BorderBottom(true).BorderRight(true).BorderTop(false)
+	listBaseStyle := lipgloss.NewStyle().Padding(0, 1, 1, 1).Margin(0, 1, 0, 1)
 
 	s.ActiveStyle = lipgloss.NewStyle().Foreground(primaryColor).BorderForeground(primaryColor)
 	s.TitleActiveStyle = lipgloss.NewStyle().Background(primaryColor).Foreground(secondaryColor)
 	s.ListActiveStyle = listBaseStyle.Copy().BorderForeground(primaryColor).BorderStyle(lipgloss.DoubleBorder())
-	s.ListHeaderActiveStyle = func() lipgloss.Style {
-		b := lipgloss.DoubleBorder()
-		b.Right = "╠"
-		b.Left = "╣"
-		return s.ActiveStyle.Copy().BorderStyle(b).Padding(0, 1)
-	}()
+	s.ListHeaderActiveStyle = s.ActiveStyle.Copy().Padding(0, 1).Border(lipgloss.DoubleBorder(), false, false, true, false)
 	s.ReaderTitleActiveStyle = func() lipgloss.Style {
 		b := lipgloss.DoubleBorder()
 		b.Right = "╠"
@@ -89,12 +87,7 @@ func NewsStyle(t ThemeConfig) (s Style) {
 	s.InactiveStyle = lipgloss.NewStyle().Foreground(secondaryColor).BorderForeground(secondaryColor)
 	s.TitleInactiveStyle = lipgloss.NewStyle().Foreground(secondaryColor)
 	s.ListInactiveStyle = listBaseStyle.Copy().BorderForeground(secondaryColor).BorderStyle(lipgloss.RoundedBorder())
-	s.ListHeaderInactiveStyle = func() lipgloss.Style {
-		b := lipgloss.RoundedBorder()
-		b.Right = "├"
-		b.Left = "┤"
-		return s.InactiveStyle.Copy().BorderStyle(b).Padding(0, 1)
-	}()
+	s.ListHeaderInactiveStyle = s.InactiveStyle.Copy().Padding(0, 1).Border(lipgloss.RoundedBorder(), false, false, true, false)
 	s.ReaderTitleInactiveStyle = func() lipgloss.Style {
 		b := lipgloss.RoundedBorder()
 		b.Right = "├"
@@ -118,6 +111,28 @@ func NewsStyle(t ThemeConfig) (s Style) {
 	s.ItemBreakingTitle = lipgloss.NewStyle().Foreground(breakingColor).Padding(0, 0, 0, 2)
 
 	s.ItemBreakingDesc = s.ItemBreakingTitle.Copy().Foreground(breakingColor)
+
+	s.ActiveTabBorder = lipgloss.Border{
+		Top:         "─",
+		Bottom:      " ",
+		Left:        "│",
+		Right:       "│",
+		TopLeft:     "╭",
+		TopRight:    "╮",
+		BottomLeft:  "┘",
+		BottomRight: "└",
+	}
+
+	s.InactiveTabBorder = lipgloss.Border{
+		Top:         "─",
+		Bottom:      "─",
+		Left:        "│",
+		Right:       "│",
+		TopLeft:     "╭",
+		TopRight:    "╮",
+		BottomLeft:  "┴",
+		BottomRight: "┴",
+	}
 
 	s.ReaderStyle = CreateReaderStyle(t)
 
