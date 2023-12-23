@@ -1,14 +1,11 @@
 package tui
 
 import (
-	"strings"
-
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/config"
 	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
-	"github.com/zMoooooritz/nachrichten/pkg/util"
 )
 
 const (
@@ -92,7 +89,7 @@ func (s *Selector) SetVisible(isVisible bool) {
 
 func (s *Selector) SetDims(w, h int) {
 	s.fullWidth = w
-	s.headerWidth = w - 4
+	s.headerWidth = w - 2
 	s.fullHeight = h
 	s.listHeight = h - 4
 }
@@ -142,38 +139,31 @@ func (s Selector) View() string {
 }
 
 func (s Selector) listHeadView() string {
-	fillCharacter := config.SingleFillCharacter
-	lineStyle := s.style.InactiveStyle
 	headerStyle := s.style.ListHeaderInactiveStyle
 	if s.isFocused {
-		fillCharacter = config.DoubleFillCharacter
-		lineStyle = s.style.ActiveStyle
 		headerStyle = s.style.ListHeaderActiveStyle
 	}
 
-	headerWidth := util.Max(0, s.headerWidth-lipgloss.Width(headerText))
-	leftWidth, rightWidth := headerWidth/2, headerWidth-headerWidth/2
-	leftLine := lineStyle.Render(strings.Repeat(fillCharacter, leftWidth))
-	rightLine := lineStyle.Render(strings.Repeat(fillCharacter, rightWidth))
-	newsHeader := headerStyle.Render(headerText)
-	return lipgloss.JoinHorizontal(lipgloss.Center, leftLine, newsHeader, rightLine)
+	centeredHeader := lipgloss.PlaceHorizontal(s.headerWidth, lipgloss.Center, headerText)
+	return headerStyle.Render(centeredHeader)
 }
 
 func (s Selector) listSelectView(names []string, activeIndex int) string {
-	cellWidth := s.headerWidth / len(names)
+	cellWidth := (s.headerWidth - len(names)) / len(names)
 	var widths []int
 	for i := 0; i < len(names)-1; i++ {
 		widths = append(widths, cellWidth)
 	}
-	widths = append(widths, s.headerWidth-(len(names)-1)*cellWidth)
+	widths = append(widths, s.headerWidth-(len(names)-1)*cellWidth-len(names))
 	result := ""
 	for i, n := range names {
-		style := s.style.TitleInactiveStyle
+		border := s.style.InactiveTabBorder
 		if i == activeIndex {
-			style = s.style.TitleActiveStyle
-			n = AddMarkingToText(n)
+			border = s.style.ActiveTabBorder
 		}
-		result += style.Render(lipgloss.PlaceHorizontal(widths[i], lipgloss.Center, n))
+		style := s.style.InactiveStyle
+		centeredText := lipgloss.PlaceHorizontal(widths[i], lipgloss.Center, n)
+		result = lipgloss.JoinHorizontal(lipgloss.Center, result, style.Copy().MarginBottom(1).BorderStyle(border).Render(centeredText))
 	}
-	return lipgloss.NewStyle().Padding(1, 0, 1, 2).Render(result)
+	return result
 }
