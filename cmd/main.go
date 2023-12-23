@@ -12,10 +12,9 @@ import (
 )
 
 func Run(configFile string, logFile string) {
-
 	configuration := config.Load(configFile)
-	if logFile != "" {
-		err := util.SetLogFile(logFile)
+	err := util.SetLogFile(logFile)
+	if err != nil {
 		log.Fatalln("Error occoured while setting up logger: ", err)
 	}
 	util.Logger.Println("Application started.")
