@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"image"
 	"math"
 
@@ -28,20 +27,6 @@ func getChar(val float64) byte {
 func getLuminosityPt(x int, y int, img image.Image) float64 {
 	r, g, b, _ := img.At(x, y).RGBA()
 	return (0.2126*float64(r>>8) + 0.7152*float64(g>>8) + 0.0722*float64(b>>8))
-}
-
-func getGrayscalePt(x int, y int, img image.Image) float64 {
-	r, g, b, _ := img.At(x, y).RGBA()
-	return (float64(r>>8+g>>8+b>>8) / 3)
-}
-
-func printImage(img [][]string) {
-	for _, dY := range img {
-		for _, dX := range dY {
-			fmt.Printf("%s ", dX)
-		}
-		fmt.Println()
-	}
 }
 
 func applyColor(r uint8, g uint8, b uint8, character byte) string {
