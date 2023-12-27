@@ -2,6 +2,8 @@ package tui
 
 import (
 	"fmt"
+	"image"
+	"strconv"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -39,6 +41,7 @@ type Model struct {
 	reader      Reader
 	imageViewer ImageViewer
 	spinner     spinner.Model
+	thumbCache  map[string]image.Image
 	width       int
 	height      int
 }
@@ -68,6 +71,7 @@ func InitialModel(c config.Configuration) Model {
 		reader:      NewReader(style),
 		imageViewer: NewImageViewer(style),
 		spinner:     NewDotSpinner(),
+		thumbCache:  make(map[string]image.Image),
 		width:       0,
 		height:      0,
 	}
@@ -119,11 +123,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.left):
 			m.setFocus(false)
 		case key.Matches(msg, m.keymap.next):
-			m.selector.NextList()
-			m.setFocus(false)
+			if m.selector.IsFocused() {
+				m.selector.NextList()
+			} else {
+				m.toggelViewer(true)
+			}
 		case key.Matches(msg, m.keymap.prev):
-			m.selector.PrevList()
-			m.setFocus(false)
+			if m.selector.IsFocused() {
+				m.selector.PrevList()
+			} else {
+				m.toggelViewer(true)
+			}
 		case key.Matches(msg, m.keymap.full):
 			if m.reader.IsActive() {
 				m.reader.SetFullScreen(!m.reader.IsFullScreen())
@@ -144,12 +154,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.reader.GotoBottom()
 			}
 		case key.Matches(msg, m.keymap.image):
-			if m.selector.IsFocused() {
-				m.reader.SetActive(!m.reader.IsActive())
-				m.imageViewer.SetActive(!m.imageViewer.IsActive())
-				m.updateDisplayedArticle()
-				// m.updateSizes(m.width, m.height)
-			}
+			m.toggelViewer(!m.selector.IsFocused())
 		case key.Matches(msg, m.keymap.open):
 			article := m.selector.GetSelectedArticle()
 			m.opener.OpenUrl(config.TypeHTML, article.URL)
@@ -205,6 +210,16 @@ func (m *Model) setFocus(onViewer bool) {
 	m.updateDisplayedArticle()
 }
 
+func (m *Model) toggelViewer(setFocus bool) {
+	m.reader.SetActive(!m.reader.IsActive())
+	m.imageViewer.SetActive(!m.imageViewer.IsActive())
+	if setFocus {
+		m.reader.SetFocused(!m.reader.IsFocused())
+		m.imageViewer.SetFocused(!m.imageViewer.IsFocused())
+	}
+	m.updateDisplayedArticle()
+}
+
 func (m *Model) updateDisplayedArticle() {
 	article := m.selector.GetSelectedArticle()
 	if m.reader.isActive {
@@ -213,9 +228,15 @@ func (m *Model) updateDisplayedArticle() {
 		m.reader.SetHeaderContent(article.Topline, article.Date)
 	}
 	if m.imageViewer.IsActive() {
-		image, err := http.LoadImage(article.Image.ImageURLs.RectSmall)
-		if err != nil {
-			return
+		thumbCacheKey := article.Topline + strconv.FormatInt(article.Date.Unix(), 10)
+		image, ok := m.thumbCache[thumbCacheKey]
+		if !ok {
+			var err error
+			image, err = http.LoadImage(article.Image.ImageURLs.RectSmall)
+			if err != nil {
+				return
+			}
+			m.thumbCache[thumbCacheKey] = image
 		}
 		m.imageViewer.SetImage(image)
 		m.imageViewer.SetHeaderContent(article.Topline, article.Date)
