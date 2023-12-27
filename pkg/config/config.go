@@ -9,23 +9,22 @@ import (
 type Configuration struct {
 	SettingsConfig SettingsConfig     `yaml:"Settings"`
 	AppConfig      ApplicationsConfig `yaml:"Application,omitempty"`
-	ThemeConfig    ThemeConfig        `yaml:"Theme,omitempty"`
+	Theme          Theme              `yaml:"Theme,omitempty"`
 }
 
 type SettingsConfig struct {
 	HideHelpOnStartup bool `yaml:"HideHelpOnStartup"`
 }
 
-type ThemeConfig struct {
-	PrimaryColor           string `yaml:"PrimaryColor"`
-	SecondaryColor         string `yaml:"SecondaryColor"`
-	NormalTitleColor       string `yaml:"NormaleTitleColor"`
-	NormalDescColor        string `yaml:"NormalDescColor"`
-	SelectedPrimaryColor   string `yaml:"SelectedPrimaryColor"`
-	SelectedSecondaryColor string `yaml:"SelectedSecondaryColor"`
-	BreakingColor          string `yaml:"BreakingColor"`
-	ReaderHighlightColor   string `yaml:"ReaderHighlightColor"`
-	ReaderHeadingColor     string `yaml:"ReaderHeadingColor"`
+type Theme struct {
+	PrimaryColor         string `yaml:"PrimaryColor"`
+	ShadedColor          string `yaml:"ShadedColor"`
+	HighlightColor       string `yaml:"HighlightColor"`
+	HighlightShadedColor string `yaml:"HighlightShadedColor"`
+	WarningColor         string `yaml:"WarningColor"`
+	WarningShadedColor   string `yaml:"WarningShadedColor"`
+	ReaderHighlightColor string `yaml:"ReaderHighlightColor"`
+	ReaderHeadingColor   string `yaml:"ReaderHeadingColor"`
 }
 
 type ApplicationsConfig struct {

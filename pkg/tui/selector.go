@@ -162,10 +162,11 @@ func (s Selector) listSelectView(names []string, activeIndex int) string {
 	result := ""
 	for i, n := range names {
 		border := s.style.InactiveTabBorder
+		style := s.style.InactiveStyle
 		if i == activeIndex {
 			border = s.style.ActiveTabBorder
+			style = s.style.TextHighlightStyle
 		}
-		style := s.style.InactiveStyle
 		centeredText := lipgloss.PlaceHorizontal(widths[i], lipgloss.Center, n)
 		result = lipgloss.JoinHorizontal(lipgloss.Center, result, style.Copy().MarginBottom(1).BorderStyle(border).Render(centeredText))
 	}

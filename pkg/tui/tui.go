@@ -47,12 +47,12 @@ type Model struct {
 }
 
 func InitialModel(c config.Configuration) Model {
-	tc := config.ThemeConfig{}
+	theme := config.Theme{}
 	var style config.Style
-	if c.ThemeConfig != tc {
-		style = config.NewsStyle(c.ThemeConfig)
+	if c.Theme != theme {
+		style = config.NewsStyle(c.Theme)
 	} else {
-		style = config.NewsStyle(config.DefaultThemeConfiguration())
+		style = config.NewsStyle(config.GruvboxTheme())
 	}
 
 	helpMode := 1

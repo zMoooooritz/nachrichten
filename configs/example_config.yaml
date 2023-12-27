@@ -28,13 +28,12 @@ Application:
 # Configuration of the theming
 # Currently only the configuration of colors is implemented
 Theme:
-  PrimaryColor: "#3636D1"
-  SecondaryColor: "#F8F8F2"
-  NormalTitleColor: "#DDDDDD"
-  NormalDescColor: "#777777"
-  SelectedPrimaryColor: "#AD58B4"
-  SelectedSecondaryColor: "#EE6FF8"
-  BreakingColor: "#FF0000"
-  ReaderHighlightColor: "#FFB86C"
-  ReaderHeadingColor: "#BD93F9"
+  PrimaryColor:         "#EBDBB2"
+  ShadedColor:          "#928374"
+  HighlightColor:       "#458588"
+  HighlightShadedColor: "#83A598"
+  WarningColor:         "#FB4934"
+  WarningShadedColor:   "#CC241D"
+  ReaderHighlightColor: "#FABD2F"
+  ReaderHeadingColor:   "#8EC07C"
 
