@@ -3,7 +3,7 @@ module github.com/zMoooooritz/nachrichten
 go 1.20
 
 require (
-	github.com/JohannesKaufmann/html-to-markdown v1.4.2
+	github.com/JohannesKaufmann/html-to-markdown v1.5.0
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/aybabtme/rgbterm v0.0.0-20170906152045-cc83f3b3ce59
 	github.com/buger/jsonparser v1.1.1
@@ -38,9 +38,9 @@ require (
 	github.com/sahilm/fuzzy v0.1.1-0.20230530133925-c48e322e2a8f // indirect
 	github.com/yuin/goldmark v1.6.0 // indirect
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
-	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
-	golang.org/x/term v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )
