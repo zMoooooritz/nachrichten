@@ -2,12 +2,12 @@ package config
 
 import "github.com/charmbracelet/glamour/ansi"
 
-func CreateReaderStyle(t ThemeConfig) ansi.StyleConfig {
+func CreateReaderStyle(t Theme) ansi.StyleConfig {
 	return ansi.StyleConfig{
 		Document: ansi.StyleBlock{
 			StylePrimitive: ansi.StylePrimitive{
 				BlockSuffix: "\n",
-				Color:       stringPtr(t.SecondaryColor),
+				Color:       stringPtr(t.PrimaryColor),
 			},
 			Margin: uintPtr(2),
 		},
