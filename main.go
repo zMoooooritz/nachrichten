@@ -15,6 +15,7 @@ var (
 
 	configFile = flag.String("config", "", "Path to configuration file")
 	logFile    = flag.String("debug", "", "Path to log file")
+	shortnews  = flag.Bool("shortnews", false, "Only open the current short news")
 	version    = flag.Bool("version", false, "Display version")
 )
 
@@ -38,5 +39,5 @@ func main() {
 		os.Exit(0)
 	}
 
-	cmd.Run(*configFile, *logFile)
+	cmd.Run(*configFile, *logFile, *shortnews)
 }
