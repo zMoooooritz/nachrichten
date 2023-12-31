@@ -157,13 +157,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.toggelViewer(!m.selector.IsFocused())
 		case key.Matches(msg, m.keymap.open):
 			article := m.selector.GetSelectedArticle()
-			m.opener.OpenUrl(config.TypeHTML, article.URL)
+			m.opener.OpenUrl(util.TypeHTML, article.URL)
 		case key.Matches(msg, m.keymap.video):
 			article := m.selector.GetSelectedArticle()
-			m.opener.OpenUrl(config.TypeVideo, article.Video.VideoURLs.Big)
+			m.opener.OpenUrl(util.TypeVideo, article.Video.VideoURLs.Big)
 		case key.Matches(msg, m.keymap.shortNews):
-			url, _ := tagesschau.GetShortNewsURL()
-			m.opener.OpenUrl(config.TypeVideo, url)
+			url, err := tagesschau.GetShortNewsURL()
+			if err == nil {
+				m.opener.OpenUrl(util.TypeVideo, url)
+			}
 		}
 	case tea.WindowSizeMsg:
 		m.updateSizes(msg.Width, msg.Height)

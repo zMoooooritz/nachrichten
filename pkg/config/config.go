@@ -39,15 +39,6 @@ type ApplicationConfig struct {
 	Args []string `yaml:"Args"`
 }
 
-type ResourceType int
-
-const (
-	TypeImage ResourceType = iota
-	TypeAudio
-	TypeVideo
-	TypeHTML
-)
-
 func Load(configFile string) Configuration {
 	config := defaultConfiguration()
 

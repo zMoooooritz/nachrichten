@@ -7,6 +7,15 @@ import (
 	"github.com/zMoooooritz/nachrichten/pkg/config"
 )
 
+type ResourceType int
+
+const (
+	TypeImage ResourceType = iota
+	TypeAudio
+	TypeVideo
+	TypeHTML
+)
+
 type Opener struct {
 	configuration config.Configuration
 }
@@ -17,17 +26,17 @@ func NewOpener(configuration config.Configuration) Opener {
 	}
 }
 
-func (o Opener) OpenUrl(t config.ResourceType, url string) {
+func (o Opener) OpenUrl(t ResourceType, url string) {
 	var appConfig config.ApplicationConfig
 
 	switch t {
-	case config.TypeImage:
+	case TypeImage:
 		appConfig = o.configuration.AppConfig.Image
-	case config.TypeAudio:
+	case TypeAudio:
 		appConfig = o.configuration.AppConfig.Audio
-	case config.TypeVideo:
+	case TypeVideo:
 		appConfig = o.configuration.AppConfig.Video
-	case config.TypeHTML:
+	case TypeHTML:
 		appConfig = o.configuration.AppConfig.HTML
 	default:
 		defaultOpenUrl(url)
