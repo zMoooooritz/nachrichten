@@ -1,13 +1,20 @@
 package tagesschau
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
+
+const (
+	timeRegex = `\b\d{1,2}:\d{2}\b`
+)
 
 func ContentToParagraphs(content []Content) []string {
 	prevType := "text"
 	prevSection := false
 	paragraph := ""
 	var paragraphs []string
-	for _, c := range content {
+	for i, c := range content {
 		switch c.Type {
 		case "text":
 			fallthrough
@@ -34,8 +41,9 @@ func ContentToParagraphs(content []Content) []string {
 				}
 				text = text[:startIdx+2] + text[endIndex+1:]
 			}
+
 			sec := isSection(text)
-			if (prevType != c.Type || sec || prevSection) && paragraph != "" {
+			if (prevType != c.Type || sec || prevSection) && paragraph != "" || i == len(content)-1 {
 				paragraphs = append(paragraphs, paragraph)
 				paragraph = ""
 			}
@@ -44,7 +52,7 @@ func ContentToParagraphs(content []Content) []string {
 		}
 		prevType = c.Type
 	}
-	paragraphs = append(paragraphs, paragraph)
+	paragraphs = append(paragraphs, formatLastLine(paragraph))
 	return paragraphs
 }
 
@@ -54,4 +62,26 @@ func isSection(text string) bool {
 
 func isHighlighted(text string, tag string) bool {
 	return strings.HasPrefix(text, "<"+tag+">") && strings.HasSuffix(text, "</"+tag+">")
+}
+
+func formatLastLine(text string) string {
+	text = strings.TrimSpace(text)
+
+	if !(strings.HasPrefix(text, "<strong>") || containsTime(text)) || isHighlighted(text, "strong") {
+		return text
+	}
+
+	text = strings.ReplaceAll(text, "<strong>", "")
+	text = strings.ReplaceAll(text, "</strong>", "")
+	text = strings.ReplaceAll(text, "<br />", "")
+	start, end, _ := strings.Cut(text, ":")
+	start = "<strong>" + start + ":" + "</strong>"
+	end = strings.TrimSpace(end)
+
+	return start + " " + end
+}
+
+func containsTime(text string) bool {
+	re := regexp.MustCompile(timeRegex)
+	return re.Match([]byte(text))
 }
