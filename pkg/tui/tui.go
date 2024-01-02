@@ -125,12 +125,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.next):
 			if m.selector.IsFocused() {
 				m.selector.NextList()
+				m.updateDisplayedArticle()
 			} else {
 				m.toggelViewer(true)
 			}
 		case key.Matches(msg, m.keymap.prev):
 			if m.selector.IsFocused() {
 				m.selector.PrevList()
+				m.updateDisplayedArticle()
 			} else {
 				m.toggelViewer(true)
 			}
