@@ -10,7 +10,10 @@ import (
 )
 
 func FormatParagraphs(paragraphs []string, width int, s config.Style) string {
-	converter := md.NewConverter("", true, nil)
+	options := md.Options{
+		EscapeMode: "disabled",
+	}
+	converter := md.NewConverter("", true, &options)
 	renderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(width),
