@@ -10,9 +10,11 @@ nachrichten
 
 A small TUI for reading German news
 
+<img alt="Welcome to nachrichten" src="https://github.com/zMoooooritz/nachrichten/blob/master/examples/demo.gif" width="800" />
+
 ## Installation 
 Install directly using Go
-```
+```go
 go install github.com/zMoooooritz/nachrichten@latest
 ```
 or download from [releases](https://github.com/zMoooooritz/nachrichten/releases)
