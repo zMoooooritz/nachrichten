@@ -1,7 +1,7 @@
 
 # Global settings for the application
 Settings:
-  RideHelpOnStartup: true
+  HideHelpOnStartup: true
 
 # Configuration of how to open specific resources
 # Via the args it is possible to provide flags to the application

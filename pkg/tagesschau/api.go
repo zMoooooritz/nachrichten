@@ -33,6 +33,7 @@ type NewsEntry struct {
 	Image        Image     `json:"teaserImage"`
 	Content      []Content `json:"content"`
 	Video        Video     `json:"video"`
+	ID           string    `json:"sophoraId"`
 }
 
 func (n NewsEntry) Title() string       { return n.Topline }
@@ -81,7 +82,23 @@ func LoadNews() News {
 	if err != nil {
 		log.Fatal(err)
 	}
+	news.NationalNews = deduplicateEntries(news.NationalNews)
+	news.RegionalNews = deduplicateEntries(news.RegionalNews)
 	return news
+}
+
+func deduplicateEntries(entries []NewsEntry) []NewsEntry {
+	deduped := []NewsEntry{}
+	seen := make(map[string]bool)
+	for _, entry := range entries {
+		id := entry.ID
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = true
+		deduped = append(deduped, entry)
+	}
+	return deduped
 }
 
 func GetShortNewsURL() (string, error) {
