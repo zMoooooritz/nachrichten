@@ -13,7 +13,10 @@ import (
 )
 
 func Run(configFile string, logFile string, shortNews bool) {
-	configuration := config.Load(configFile)
+	configuration, err := config.Load(configFile)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	if logFile != "" {
 		err := util.SetLogFile(logFile)
@@ -26,7 +29,7 @@ func Run(configFile string, logFile string, shortNews bool) {
 	if shortNews {
 		url, err := tagesschau.GetShortNewsURL()
 		if err == nil {
-			opener := util.NewOpener(configuration)
+			opener := util.NewOpener(configuration.Applications)
 			opener.OpenUrl(util.TypeVideo, url)
 		} else {
 			log.Fatalln("Error occoured while fetching shornews URL")

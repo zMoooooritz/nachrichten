@@ -1,18 +1,19 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
 )
 
 type Configuration struct {
-	SettingsConfig SettingsConfig     `yaml:"Settings"`
-	AppConfig      ApplicationsConfig `yaml:"Application,omitempty"`
-	Theme          Theme              `yaml:"Theme,omitempty"`
+	Settings     Settings     `yaml:"Settings,omitempty"`
+	Applications Applications `yaml:"Application,omitempty"`
+	Theme        Theme        `yaml:"Theme,omitempty"`
 }
 
-type SettingsConfig struct {
+type Settings struct {
 	HideHelpOnStartup bool `yaml:"HideHelpOnStartup"`
 }
 
@@ -27,34 +28,57 @@ type Theme struct {
 	ReaderHeadingColor   string `yaml:"ReaderHeadingColor"`
 }
 
-type ApplicationsConfig struct {
-	Image ApplicationConfig `yaml:"Image,omitempty"`
-	Audio ApplicationConfig `yaml:"Audio,omitempty"`
-	Video ApplicationConfig `yaml:"Video,omitempty"`
-	HTML  ApplicationConfig `yaml:"HTML,omitempty"`
+type Applications struct {
+	Image Application `yaml:"Image,omitempty"`
+	Audio Application `yaml:"Audio,omitempty"`
+	Video Application `yaml:"Video,omitempty"`
+	HTML  Application `yaml:"HTML,omitempty"`
 }
 
-type ApplicationConfig struct {
+type Application struct {
 	Path string   `yaml:"Path"`
 	Args []string `yaml:"Args"`
 }
 
-func Load(configFile string) Configuration {
+func Load(configFile string) (Configuration, error) {
 	config := defaultConfiguration()
+	// no config file supplied, use default values
+	if configFile == "" {
+		return config, nil
+	}
 
 	data, err := os.ReadFile(configFile)
 	if err != nil {
-		return config
+		return Configuration{}, fmt.Errorf("Configuration error: %s", err)
 	}
 
-	_ = yaml.Unmarshal(data, &config)
-	return config
+	err = yaml.Unmarshal(data, &config)
+	if err != nil {
+		return Configuration{}, fmt.Errorf("Configuration error: %s", err)
+	}
+
+	return config, nil
 }
 
 func defaultConfiguration() Configuration {
 	return Configuration{
-		SettingsConfig: SettingsConfig{
+		Settings: Settings{
 			HideHelpOnStartup: false,
 		},
+		Applications: Applications{},
+		Theme:        gruvboxTheme(),
+	}
+}
+
+func gruvboxTheme() Theme {
+	return Theme{
+		PrimaryColor:         "#EBDBB2",
+		ShadedColor:          "#928374",
+		HighlightColor:       "#458588",
+		HighlightShadedColor: "#83A598",
+		WarningColor:         "#FB4934",
+		WarningShadedColor:   "#CC241D",
+		ReaderHighlightColor: "#FABD2F",
+		ReaderHeadingColor:   "#8EC07C",
 	}
 }
