@@ -17,46 +17,46 @@ const (
 )
 
 type Opener struct {
-	configuration config.Configuration
+	apps config.Applications
 }
 
-func NewOpener(configuration config.Configuration) Opener {
+func NewOpener(apps config.Applications) Opener {
 	return Opener{
-		configuration: configuration,
+		apps: apps,
 	}
 }
 
 func (o Opener) OpenUrl(t ResourceType, url string) {
-	var appConfig config.ApplicationConfig
+	var app config.Application
 
 	switch t {
 	case TypeImage:
-		appConfig = o.configuration.AppConfig.Image
+		app = o.apps.Image
 	case TypeAudio:
-		appConfig = o.configuration.AppConfig.Audio
+		app = o.apps.Audio
 	case TypeVideo:
-		appConfig = o.configuration.AppConfig.Video
+		app = o.apps.Video
 	case TypeHTML:
-		appConfig = o.configuration.AppConfig.HTML
+		app = o.apps.HTML
 	default:
 		defaultOpenUrl(url)
 		return
 	}
 
-	cConfig := appConfig
-	cConfig.Args = append([]string(nil), appConfig.Args...)
+	appCopy := app
+	appCopy.Args = append([]string(nil), app.Args...)
 
-	if cConfig.Path == "" || len(cConfig.Args) == 0 {
+	if appCopy.Path == "" || len(appCopy.Args) == 0 {
 		defaultOpenUrl(url)
 		return
 	}
 
-	for i, arg := range cConfig.Args {
+	for i, arg := range appCopy.Args {
 		if arg == "$" {
-			cConfig.Args[i] = url
+			appCopy.Args[i] = url
 		}
 	}
-	_ = exec.Command(cConfig.Path, cConfig.Args...).Start()
+	_ = exec.Command(appCopy.Path, appCopy.Args...).Start()
 }
 
 func defaultOpenUrl(url string) {

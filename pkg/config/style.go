@@ -46,19 +46,6 @@ type Style struct {
 	ReaderStyle ansi.StyleConfig
 }
 
-func GruvboxTheme() Theme {
-	return Theme{
-		PrimaryColor:         "#EBDBB2",
-		ShadedColor:          "#928374",
-		HighlightColor:       "#458588",
-		HighlightShadedColor: "#83A598",
-		WarningColor:         "#FB4934",
-		WarningShadedColor:   "#CC241D",
-		ReaderHighlightColor: "#FABD2F",
-		ReaderHeadingColor:   "#8EC07C",
-	}
-}
-
 func NewsStyle(t Theme) (s Style) {
 	primaryColor := lipgloss.Color(t.PrimaryColor)
 	shadedColor := lipgloss.Color(t.ShadedColor)

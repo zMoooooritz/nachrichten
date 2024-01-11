@@ -47,21 +47,15 @@ type Model struct {
 }
 
 func InitialModel(c config.Configuration) Model {
-	theme := config.Theme{}
-	var style config.Style
-	if c.Theme != theme {
-		style = config.NewsStyle(c.Theme)
-	} else {
-		style = config.NewsStyle(config.GruvboxTheme())
-	}
+	style := config.NewsStyle(c.Theme)
 
 	helpMode := 1
-	if c.SettingsConfig.HideHelpOnStartup {
+	if c.Settings.HideHelpOnStartup {
 		helpMode = 0
 	}
 
 	m := Model{
-		opener:      util.NewOpener(c),
+		opener:      util.NewOpener(c.Applications),
 		keymap:      GetKeyMap(),
 		style:       style,
 		ready:       false,
