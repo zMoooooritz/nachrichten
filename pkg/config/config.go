@@ -15,6 +15,7 @@ type Configuration struct {
 
 type Settings struct {
 	HideHelpOnStartup bool `yaml:"HideHelpOnStartup"`
+	PreloadThumbnails bool `yaml:"PreloadThumbnails"`
 }
 
 type Theme struct {
@@ -64,6 +65,7 @@ func defaultConfiguration() Configuration {
 	return Configuration{
 		Settings: Settings{
 			HideHelpOnStartup: false,
+			PreloadThumbnails: false,
 		},
 		Applications: Applications{},
 		Theme:        gruvboxTheme(),

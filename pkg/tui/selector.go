@@ -16,7 +16,6 @@ const (
 
 type Selector struct {
 	style              config.Style
-	news               tagesschau.News
 	lists              []list.Model
 	listsActiveIndeces []int
 	activeListIndex    int
@@ -53,8 +52,7 @@ func InitLists(s config.Style, count int) []list.Model {
 }
 
 func (s *Selector) FillLists(news tagesschau.News) {
-	s.news = news
-	for i, n := range [][]tagesschau.NewsEntry{news.NationalNews, news.RegionalNews} {
+	for i, n := range [][]tagesschau.Article{news.NationalNews, news.RegionalNews} {
 		var items []list.Item
 		for _, ne := range n {
 			items = append(items, ne)
@@ -98,14 +96,8 @@ func (s *Selector) SetDims(w, h int) {
 	s.listHeight = h - 4
 }
 
-func (s *Selector) GetSelectedArticle() tagesschau.NewsEntry {
-	var article tagesschau.NewsEntry
-	if s.activeListIndex == 0 {
-		article = s.news.NationalNews[s.listsActiveIndeces[s.activeListIndex]]
-	} else {
-		article = s.news.RegionalNews[s.listsActiveIndeces[s.activeListIndex]]
-	}
-	return article
+func (s *Selector) GetSelectedIndex() (int, int) {
+	return s.activeListIndex, s.listsActiveIndeces[s.activeListIndex]
 }
 
 func (s *Selector) HasSelectionChanged() bool {
