@@ -44,7 +44,7 @@ func (n NewsDelegate) Render(w io.Writer, m list.Model, index int, item list.Ite
 		s           = &n.Styles
 	)
 
-	entry, ok := item.(tagesschau.NewsEntry)
+	entry, ok := item.(tagesschau.Article)
 	if ok {
 		title = entry.Title()
 		desc = entry.Description()

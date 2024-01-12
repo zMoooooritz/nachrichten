@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"image"
 	"log"
 	"time"
 
@@ -18,57 +19,94 @@ const (
 	shortNewsUrl string = baseUrl + "multimedia/sendung/tagesschau_in_100_sekunden"
 )
 
+type ImageSize int
+type AspectRation int
+
+const (
+	SMALL ImageSize = iota
+	MEDIUM
+	LARGE
+
+	SQUARE AspectRation = iota
+	RECT
+)
+
+type ImageSpec struct {
+	Size  ImageSize
+	Ratio AspectRation
+}
+
 type News struct {
-	NationalNews []NewsEntry `json:"news"`
-	RegionalNews []NewsEntry `json:"regional"`
+	NationalNews []Article `json:"news"`
+	RegionalNews []Article `json:"regional"`
 }
 
-type NewsEntry struct {
-	Topline      string    `json:"topline"`
-	Desc         string    `json:"title"`
-	Introduction string    `json:"firstSentence"`
-	URL          string    `json:"shareURL"`
-	Breaking     bool      `json:"breakingNews"`
-	Date         time.Time `json:"date"`
-	Image        Image     `json:"teaserImage"`
-	Content      []Content `json:"content"`
-	Video        Video     `json:"video"`
-	ID           string    `json:"sophoraId"`
+type Article struct {
+	Topline      string     `json:"topline"`
+	Desc         string     `json:"title"`
+	Introduction string     `json:"firstSentence"`
+	Tags         []Tag      `json:"tags"`
+	Type         string     `json:"type"`
+	Ressort      string     `json:"ressort"`
+	RegionID     RegionID   `json:"regionId"`
+	RegionIDs    []RegionID `json:"regionIds"`
+	URL          string     `json:"shareURL"`
+	Breaking     bool       `json:"breakingNews"`
+	Date         time.Time  `json:"date"`
+	ImageData    ImageData  `json:"teaserImage"`
+	Content      []Content  `json:"content"`
+	Video        Video      `json:"video"`
+	ID           string     `json:"sophoraId"`
+	Thumbnail    image.Image
 }
 
-func (n NewsEntry) Title() string       { return n.Topline }
-func (n NewsEntry) Description() string { return n.Desc }
-func (n NewsEntry) FilterValue() string { return n.Topline }
+func (n Article) Title() string       { return n.Topline }
+func (n Article) Description() string { return n.Desc }
+func (n Article) FilterValue() string { return n.Topline }
+
+type Tag struct {
+	Tag string `json:"tag"`
+}
 
 type Content struct {
 	Value string `json:"value"`
 	Type  string `json:"type"`
 }
 
-type Image struct {
-	Title     string    `json:"alttext"`
-	Type      string    `json:"type"`
-	ImageURLs ImageURLs `json:"imageVariants"`
+type ImageData struct {
+	Title         string        `json:"alttext"`
+	Type          string        `json:"type"`
+	ImageVariants ImageVariants `json:"imageVariants"`
 }
 
-type ImageURLs struct {
+type ImageVariants struct {
 	SquareSmall  string `json:"1x1-144"`
 	SquareMedium string `json:"1x1-432"`
-	SquareBig    string `json:"1x1-840"`
+	SquareLarge  string `json:"1x1-840"`
 	RectSmall    string `json:"16x9-256"`
 	RectMedium   string `json:"16x9-640"`
-	RectBig      string `json:"16x9-1920"`
+	RectLarge    string `json:"16x9-1920"`
 }
 
 type Video struct {
-	Title     string    `json:"title"`
-	VideoURLs VideoURLs `json:"streams"`
+	Title         string        `json:"title"`
+	Date          time.Time     `json:"date"`
+	VideoVariants VideoVariants `json:"streams"`
 }
 
-type VideoURLs struct {
+type VideoVariants struct {
 	Small  string `json:"h264s"`
 	Medium string `json:"h264m"`
 	Big    string `json:"h264xl"`
+}
+
+func RegionIdToName(id int) (string, error) {
+	regionId := RegionID(id)
+	regionName, ok := GERMAN_NAMES[regionId]
+	if ok {
+		return string(regionName), nil
+	}
+	return "", errors.New("invalid regionId")
 }
 
 func LoadNews() News {
@@ -82,15 +120,15 @@ func LoadNews() News {
 	if err != nil {
 		log.Fatal(err)
 	}
-	news.NationalNews = deduplicateEntries(news.NationalNews)
-	news.RegionalNews = deduplicateEntries(news.RegionalNews)
+	news.NationalNews = deduplicateArticles(news.NationalNews)
+	news.RegionalNews = deduplicateArticles(news.RegionalNews)
 	return news
 }
 
-func deduplicateEntries(entries []NewsEntry) []NewsEntry {
-	deduped := []NewsEntry{}
+func deduplicateArticles(articles []Article) []Article {
+	deduped := []Article{}
 	seen := make(map[string]bool)
-	for _, entry := range entries {
+	for _, entry := range articles {
 		id := entry.ID
 		if _, ok := seen[id]; ok {
 			continue
@@ -99,6 +137,62 @@ func deduplicateEntries(entries []NewsEntry) []NewsEntry {
 		deduped = append(deduped, entry)
 	}
 	return deduped
+}
+
+func getImageURL(variants ImageVariants, imageSpec ImageSpec) string {
+	sizeMap := map[ImageSpec]string{
+		{SMALL, RECT}:    variants.RectSmall,
+		{MEDIUM, RECT}:   variants.RectMedium,
+		{LARGE, RECT}:    variants.RectLarge,
+		{SMALL, SQUARE}:  variants.SquareSmall,
+		{MEDIUM, SQUARE}: variants.SquareMedium,
+		{LARGE, SQUARE}:  variants.SquareLarge,
+	}
+	return sizeMap[imageSpec]
+}
+
+func (news *News) EnrichWithThumbnails(imageSpec ImageSpec) {
+	news.NationalNews = addThumbnailToArticles(news.NationalNews, imageSpec)
+	news.RegionalNews = addThumbnailToArticles(news.RegionalNews, imageSpec)
+}
+
+func addThumbnailToArticles(articles []Article, imageSpec ImageSpec) []Article {
+	for i := range articles {
+		variants := articles[i].ImageData.ImageVariants
+		url := getImageURL(variants, imageSpec)
+		image, err := http.LoadImage(url)
+		if err == nil {
+			articles[i].Thumbnail = image
+		}
+	}
+	return articles
+}
+
+func (news *News) GetArticlesOfRegion(regionId RegionID) []Article {
+	allEntries := news.getCombinedArticles()
+	entries := []Article{}
+	for _, e := range allEntries {
+		if contains(e.RegionIDs, regionId) {
+			entries = append(entries, e)
+		}
+	}
+	return entries
+}
+
+func (news *News) getCombinedArticles() []Article {
+	entries := []Article{}
+	entries = append(entries, news.NationalNews...)
+	entries = append(entries, news.RegionalNews...)
+	return entries
+}
+
+func contains(s []RegionID, e RegionID) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func GetShortNewsURL() (string, error) {

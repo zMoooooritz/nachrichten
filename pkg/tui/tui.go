@@ -2,8 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"image"
-	"strconv"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -28,6 +26,9 @@ var (
 			Height(h).
 			AlignVertical(lipgloss.Center)
 	}
+
+	news      tagesschau.News
+	imageSpec = tagesschau.ImageSpec{Size: tagesschau.SMALL, Ratio: tagesschau.RECT}
 )
 
 type Model struct {
@@ -41,7 +42,7 @@ type Model struct {
 	reader      Reader
 	imageViewer ImageViewer
 	spinner     spinner.Model
-	thumbCache  map[string]image.Image
+	config      config.Configuration
 	width       int
 	height      int
 }
@@ -65,7 +66,7 @@ func InitialModel(c config.Configuration) Model {
 		reader:      NewReader(style),
 		imageViewer: NewImageViewer(style),
 		spinner:     NewDotSpinner(),
-		thumbCache:  make(map[string]image.Image),
+		config:      c,
 		width:       0,
 		height:      0,
 	}
@@ -90,7 +91,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tagesschau.News:
-		news := tagesschau.News(msg)
+		news = tagesschau.News(msg)
+		if m.config.Settings.PreloadThumbnails {
+			go news.EnrichWithThumbnails(imageSpec)
+		}
 		m.selector.FillLists(news)
 		m.selector.ResizeLists()
 		m.ready = true
@@ -132,10 +136,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case key.Matches(msg, m.keymap.full):
 			if m.reader.IsActive() {
+				m.reader.SetFocused(true)
+				m.selector.SetFocused(false)
 				m.reader.SetFullScreen(!m.reader.IsFullScreen())
 				m.imageViewer.SetFullScreen(m.reader.IsFullScreen())
 			}
 			if m.imageViewer.IsActive() {
+				m.imageViewer.SetFocused(true)
+				m.selector.SetFocused(false)
 				m.imageViewer.SetFullScreen(!m.imageViewer.IsFullScreen())
 				m.reader.SetFullScreen(m.imageViewer.IsFullScreen())
 			}
@@ -152,11 +160,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.image):
 			m.toggelViewer(!m.selector.IsFocused())
 		case key.Matches(msg, m.keymap.open):
-			article := m.selector.GetSelectedArticle()
+			article := m.getSelectedArticle()
 			m.opener.OpenUrl(util.TypeHTML, article.URL)
 		case key.Matches(msg, m.keymap.video):
-			article := m.selector.GetSelectedArticle()
-			m.opener.OpenUrl(util.TypeVideo, article.Video.VideoURLs.Big)
+			article := m.getSelectedArticle()
+			m.opener.OpenUrl(util.TypeVideo, article.Video.VideoVariants.Big)
 		case key.Matches(msg, m.keymap.shortNews):
 			url, err := tagesschau.GetShortNewsURL()
 			if err == nil {
@@ -219,26 +227,34 @@ func (m *Model) toggelViewer(setFocus bool) {
 }
 
 func (m *Model) updateDisplayedArticle() {
-	article := m.selector.GetSelectedArticle()
+	article := m.getSelectedArticle()
 	if m.reader.isActive {
 		text := tagesschau.ContentToParagraphs(article.Content)
 		m.reader.SetContent(text)
 		m.reader.SetHeaderContent(article.Topline, article.Date)
 	}
+
 	if m.imageViewer.IsActive() {
-		thumbCacheKey := article.Topline + strconv.FormatInt(article.Date.Unix(), 10)
-		image, ok := m.thumbCache[thumbCacheKey]
-		if !ok {
+		image := article.Thumbnail
+		if image == nil {
 			var err error
-			image, err = http.LoadImage(article.Image.ImageURLs.RectSmall)
+			image, err = http.LoadImage(article.ImageData.ImageVariants.RectSmall)
 			if err != nil {
 				return
 			}
-			m.thumbCache[thumbCacheKey] = image
+			article.Thumbnail = image
 		}
 		m.imageViewer.SetImage(image)
 		m.imageViewer.SetHeaderContent(article.Topline, article.Date)
 	}
+}
+
+func (m *Model) getSelectedArticle() *tagesschau.Article {
+	newsIndex, articleIndex := m.selector.GetSelectedIndex()
+	if newsIndex == 0 {
+		return &news.NationalNews[articleIndex]
+	}
+	return &news.RegionalNews[articleIndex]
 }
 
 func (m *Model) updateSizes(width, height int) {
