@@ -24,9 +24,9 @@ nfpms:
   - builds:
       - nachrichten
     vendor: Moooooritz
-    homepage: "https://github.com/zMoooooritz"
+    homepage: "https://moritz.biering.dev/"
     maintainer: "Moritz Biering <moritzbiering.mb@gmail.com>"
-    description: "A TUI application for reading German news"
+    description: "Stay informed without leaving your command line"
     license: MIT
     formats:
       - apk
