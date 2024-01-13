@@ -9,6 +9,7 @@ import (
 
 type Configuration struct {
 	Settings     Settings     `yaml:"Settings,omitempty"`
+	Keys         Keys         `yaml:"Keys,omitempty"`
 	Applications Applications `yaml:"Application,omitempty"`
 	Theme        Theme        `yaml:"Theme,omitempty"`
 }
@@ -16,6 +17,24 @@ type Configuration struct {
 type Settings struct {
 	HideHelpOnStartup bool `yaml:"HideHelpOnStartup"`
 	PreloadThumbnails bool `yaml:"PreloadThumbnails"`
+}
+
+type Keys struct {
+	Up              []string `yaml:"Up"`
+	Down            []string `yaml:"Down"`
+	Left            []string `yaml:"Left"`
+	Right           []string `yaml:"Right"`
+	Prev            []string `yaml:"Prev"`
+	Next            []string `yaml:"Next"`
+	Full            []string `yaml:"Full"`
+	Start           []string `yaml:"Start"`
+	End             []string `yaml:"End"`
+	Quit            []string `yaml:"Quit"`
+	ToggleThumbnail []string `yaml:"ToggleThumbnail"`
+	OpenArticle     []string `yaml:"OpenArticle"`
+	OpenVideo       []string `yaml:"OpenVideo"`
+	OpenShortNews   []string `yaml:"OpenShortNews"`
+	Help            []string `yaml:"Help"`
 }
 
 type Theme struct {
@@ -67,8 +86,29 @@ func defaultConfiguration() Configuration {
 			HideHelpOnStartup: false,
 			PreloadThumbnails: false,
 		},
+		Keys:         defaultKeys(),
 		Applications: Applications{},
 		Theme:        gruvboxTheme(),
+	}
+}
+
+func defaultKeys() Keys {
+	return Keys{
+		Up:              []string{"k", "up"},
+		Down:            []string{"j", "down"},
+		Left:            []string{"h", "left"},
+		Right:           []string{"l", "right"},
+		Prev:            []string{"shift+tab"},
+		Next:            []string{"tab"},
+		Full:            []string{"f"},
+		Start:           []string{"g", "home"},
+		End:             []string{"G", "end"},
+		Quit:            []string{"q", "esc", "ctrl+c"},
+		ToggleThumbnail: []string{"i"},
+		OpenArticle:     []string{"o"},
+		OpenVideo:       []string{"v"},
+		OpenShortNews:   []string{"s"},
+		Help:            []string{"?"},
 	}
 }
 

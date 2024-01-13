@@ -27,10 +27,10 @@ type Selector struct {
 	listHeight         int
 }
 
-func NewSelector(s config.Style) Selector {
+func NewSelector(s config.Style, km list.KeyMap) Selector {
 	return Selector{
 		style:              s,
-		lists:              InitLists(s, 2),
+		lists:              InitLists(s, km, 2),
 		listsActiveIndeces: []int{},
 		activeListIndex:    0,
 		isFocused:          true,
@@ -38,7 +38,7 @@ func NewSelector(s config.Style) Selector {
 	}
 }
 
-func InitLists(s config.Style, count int) []list.Model {
+func InitLists(s config.Style, km list.KeyMap, count int) []list.Model {
 	var lists []list.Model
 	for i := 0; i < count; i++ {
 		newList := list.New([]list.Item{}, NewNewsDelegate(s), 0, 0)
@@ -46,6 +46,7 @@ func InitLists(s config.Style, count int) []list.Model {
 		newList.SetShowTitle(false)
 		newList.SetShowStatusBar(false)
 		newList.SetShowHelp(false)
+		newList.KeyMap = km
 		lists = append(lists, newList)
 	}
 	return lists

@@ -4,10 +4,50 @@ Settings:
   HideHelpOnStartup: true
   PreloadThumbnails: true
 
+# Configuration of keybinds used in the application
+Keys:
+  Up:
+    - k
+    - up
+  Down:
+    - j
+    - down
+  Left:
+    - h
+    - left
+  Right:
+    - l
+    - right
+  Prev:
+    - shift+tab
+  Next:
+    - tab
+  Full:
+    - f
+  Start:
+    - g
+    - home
+  End:
+    - G
+    - end
+  Quit:
+    - q
+    - esc
+    - ctrl+c
+  ToggleThumbnail:
+    - i
+  OpenArticle:
+    - o
+  OpenVideo:
+    - v
+  OpenShortNews:
+    - s
+  Help:
+    - "?"
+
 # Configuration of how to open specific resources
 # Via the args it is possible to provide flags to the application
 # the arg $ will be replaced by the url of the resource
-#
 Application:
   Image:
     Path: sxiv

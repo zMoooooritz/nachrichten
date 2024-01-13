@@ -1,6 +1,11 @@
 package tui
 
-import "github.com/charmbracelet/bubbles/key"
+import (
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/zMoooooritz/nachrichten/pkg/config"
+)
 
 type KeyMap struct {
 	quit      key.Binding
@@ -20,69 +25,100 @@ type KeyMap struct {
 	help      key.Binding
 }
 
-func GetKeyMap() KeyMap {
+func GetKeyMap(keys config.Keys) KeyMap {
 	return KeyMap{
-		quit: key.NewBinding(
-			key.WithKeys("q", "esc", "ctrl+c"),
-			key.WithHelp("q", "quit"),
-		),
-		right: key.NewBinding(
-			key.WithKeys("l", "right"),
-			key.WithHelp("→/l", "right"),
-		),
-		left: key.NewBinding(
-			key.WithKeys("h", "left"),
-			key.WithHelp("←/h", "left"),
-		),
-		up: key.NewBinding(
-			key.WithKeys("j", "down"),
-			key.WithHelp("↓/j", "down"),
-		),
-		down: key.NewBinding(
-			key.WithKeys("k", "up"),
-			key.WithHelp("↑/k", "up"),
-		),
-		next: key.NewBinding(
-			key.WithKeys("tab"),
-			key.WithHelp("tab", "next"),
-		),
-		prev: key.NewBinding(
-			key.WithKeys("shift+tab"),
-			key.WithHelp("shift+tab", "prev"),
-		),
-		full: key.NewBinding(
-			key.WithKeys("f"),
-			key.WithHelp("f", "full"),
-		),
-		start: key.NewBinding(
-			key.WithKeys("g", "home"),
-			key.WithHelp("g/home", "start"),
-		),
-		end: key.NewBinding(
-			key.WithKeys("G", "end"),
-			key.WithHelp("G/end", "end"),
-		),
-		image: key.NewBinding(
-			key.WithKeys("i"),
-			key.WithHelp("i", "image"),
-		),
-		open: key.NewBinding(
-			key.WithKeys("o"),
-			key.WithHelp("o", "open"),
-		),
-		video: key.NewBinding(
-			key.WithKeys("v"),
-			key.WithHelp("v", "video"),
-		),
-		shortNews: key.NewBinding(
-			key.WithKeys("s"),
-			key.WithHelp("s", "shortnews"),
-		),
-		help: key.NewBinding(
-			key.WithKeys("?"),
-			key.WithHelp("?", "help"),
-		),
+		quit:      toHelpBinding(keys.Quit, "quit"),
+		right:     toHelpBinding(keys.Right, "right"),
+		left:      toHelpBinding(keys.Left, "left"),
+		up:        toHelpBinding(keys.Up, "up"),
+		down:      toHelpBinding(keys.Down, "down"),
+		next:      toHelpBinding(keys.Next, "next"),
+		prev:      toHelpBinding(keys.Prev, "prev"),
+		full:      toHelpBinding(keys.Full, "full"),
+		start:     toHelpBinding(keys.Start, "start"),
+		end:       toHelpBinding(keys.End, "end"),
+		image:     toHelpBinding(keys.ToggleThumbnail, "image"),
+		open:      toHelpBinding(keys.OpenArticle, "open"),
+		video:     toHelpBinding(keys.OpenVideo, "video"),
+		shortNews: toHelpBinding(keys.OpenShortNews, "shortnews"),
+		help:      toHelpBinding(keys.Help, "help"),
 	}
+}
+
+func toHelpBinding(binds []string, name string) key.Binding {
+	if len(binds) == 0 {
+		binds = append(binds, "NOKEY")
+	}
+
+	return key.NewBinding(
+		key.WithKeys(binds...),
+		key.WithHelp(keybindsToHelpText(binds), name),
+	)
+}
+
+func keybindsToHelpText(keybinds []string) string {
+	for i := range keybinds {
+		if keybinds[i] == "up" {
+			keybinds[i] = "↑"
+		}
+		if keybinds[i] == "down" {
+			keybinds[i] = "↓"
+		}
+		if keybinds[i] == "left" {
+			keybinds[i] = "←"
+		}
+		if keybinds[i] == "right" {
+			keybinds[i] = "→"
+		}
+	}
+
+	if len(keybinds) == 1 && keybinds[0] == "NOKEY" {
+		return "NOKEY"
+	}
+
+	if len(keybinds) == 2 {
+		return keybinds[0] + "/" + keybinds[1]
+	}
+
+	return keybinds[0]
+}
+
+func viewportKeymap(k config.Keys) viewport.KeyMap {
+	km := viewport.DefaultKeyMap()
+	km.Up = toBinding(k.Up)
+	km.Down = toBinding(k.Down)
+	km.PageUp = toBinding(k.Start)
+	km.PageDown = toBinding(k.End)
+	km.HalfPageUp = disabledBinding()
+	km.HalfPageDown = disabledBinding()
+	return km
+}
+
+func listKeymap(k config.Keys) list.KeyMap {
+	km := list.DefaultKeyMap()
+	km.CursorUp = toBinding(k.Up)
+	km.CursorDown = toBinding(k.Down)
+	km.GoToStart = toBinding(k.Start)
+	km.GoToEnd = toBinding(k.End)
+	km.PrevPage = disabledBinding()
+	km.NextPage = disabledBinding()
+	km.Filter = disabledBinding()
+	km.ClearFilter = disabledBinding()
+	km.CancelWhileFiltering = disabledBinding()
+	km.AcceptWhileFiltering = disabledBinding()
+	km.ShowFullHelp = disabledBinding()
+	km.CloseFullHelp = disabledBinding()
+	km.Quit = disabledBinding()
+	km.ForceQuit = disabledBinding()
+	return km
+}
+
+func toBinding(keybinds []string) key.Binding {
+	return key.NewBinding(key.WithKeys(keybinds...))
+}
+
+func disabledBinding() key.Binding {
+	return key.NewBinding(key.WithDisabled())
 }
 
 func (k KeyMap) ShortHelp() []key.Binding {
