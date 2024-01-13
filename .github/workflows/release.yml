@@ -29,15 +29,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: stable
-      - 
-        name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v4
         with:
-          distribution: goreleaser
-          version: ${{ env.GITHUB_REF_NAME }}
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.PUBLISHER_TOKEN }}
-          # Your GoReleaser Pro key, if you are using the 'goreleaser-pro' distribution:
-          # GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          version: latest
+          args: release --snapshot --skip-publish --skip-sign --rm-dist
 
