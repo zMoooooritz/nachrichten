@@ -57,14 +57,14 @@ func InitialModel(c config.Configuration) Model {
 
 	m := Model{
 		opener:      util.NewOpener(c.Applications),
-		keymap:      GetKeyMap(),
+		keymap:      GetKeyMap(c.Keys),
 		style:       style,
 		ready:       false,
 		help:        NewHelper(style),
 		helpMode:    helpMode,
-		selector:    NewSelector(style),
-		reader:      NewReader(style),
-		imageViewer: NewImageViewer(style),
+		selector:    NewSelector(style, listKeymap(c.Keys)),
+		reader:      NewReader(style, viewportKeymap(c.Keys)),
+		imageViewer: NewImageViewer(style, viewportKeymap(c.Keys)),
 		spinner:     NewDotSpinner(),
 		config:      c,
 		width:       0,

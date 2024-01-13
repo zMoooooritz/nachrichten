@@ -24,11 +24,13 @@ type ImageViewer struct {
 	image        image.Image
 }
 
-func NewImageViewer(s config.Style) ImageViewer {
+func NewImageViewer(s config.Style, km viewport.KeyMap) ImageViewer {
+	vp := viewport.New(0, 0)
+	vp.KeyMap = km
 	return ImageViewer{
 		style:    s,
 		isActive: false,
-		viewport: viewport.New(0, 0),
+		viewport: vp,
 		image:    image.Rect(0, 0, 1, 1),
 	}
 }

@@ -22,11 +22,13 @@ type Reader struct {
 	viewport     viewport.Model
 }
 
-func NewReader(s config.Style) Reader {
+func NewReader(s config.Style, km viewport.KeyMap) Reader {
+	vp := viewport.New(0, 0)
+	vp.KeyMap = km
 	return Reader{
 		style:    s,
 		isActive: true,
-		viewport: viewport.New(0, 0),
+		viewport: vp,
 	}
 }
 
