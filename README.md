@@ -22,7 +22,7 @@ go install github.com/zMoooooritz/nachrichten@latest
 or download from [releases](https://github.com/zMoooooritz/nachrichten/releases)
 
 ## ⇁ Usage
-Run the `nachrichten` command to launch the minimalistic terminal interface
+Run the `nachrichten` command to launch the minimalistic yet informative terminal interface
 
 ```bash
 Usage of nachrichten:
