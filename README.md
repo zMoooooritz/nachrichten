@@ -15,7 +15,14 @@ Access up-to-date news in German provided by the [tagesschau](https://www.tagess
 <img alt="Welcome to nachrichten" src="https://github.com/zMoooooritz/nachrichten/blob/media/media/demo.gif" width="800" />
 
 ## ⇁ Installation 
-Install directly using Go
+### Package Manager
+```bash
+# Arch Linux (btw)
+yay -S nachrichten # only AUR
+```
+
+### Go
+Install directly using `go`
 ```bash
 go install github.com/zMoooooritz/nachrichten@latest
 ```
@@ -37,11 +44,11 @@ Usage of nachrichten:
 ```
 
 ## ⇁ Configuration
-The tool does allow for user constomization
+The tool does allow for user customization
 1. **Theme** - Adapt the used colors in order to change the look and feel of the application
 2. **Keybinds** - Customize all keys used within the application
 3. **Applications** - Some news related resources can't be shown in a TUI, configure the apps used to open those resources
-4. **Settings** - General settings that alter the behaviour of the application
+4. **Settings** - General settings that alter the behavior of the application
 
 An example configuration can be found [here](https://github.com/zMoooooritz/nachrichten/blob/master/configs/config.yaml)
 
