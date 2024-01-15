@@ -56,8 +56,12 @@ func toHelpBinding(binds []string, name string) key.Binding {
 	)
 }
 
-func keybindsToHelpText(keybinds []string) string {
-	for i := range keybinds {
+func keybindsToHelpText(binds []string) string {
+	keybinds := []string{}
+
+	for i := range binds {
+		keybinds = append(keybinds, binds[i])
+
 		if keybinds[i] == "up" {
 			keybinds[i] = "↑"
 		}

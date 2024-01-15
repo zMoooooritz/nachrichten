@@ -3,6 +3,7 @@ package tagesschau
 import (
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -44,7 +45,7 @@ func ContentToParagraphs(content []Content) []string {
 
 			sec := isSection(text)
 			if (prevType != c.Type || sec || prevSection) && paragraph != "" || i == len(content)-1 {
-				paragraphs = append(paragraphs, paragraph)
+				paragraphs = append(paragraphs, clean(paragraph))
 				paragraph = ""
 			}
 			paragraph += text + " "
@@ -52,8 +53,17 @@ func ContentToParagraphs(content []Content) []string {
 		}
 		prevType = c.Type
 	}
-	paragraphs = append(paragraphs, formatLastLine(paragraph))
+	paragraphs = append(paragraphs, clean(formatLastLine(paragraph)))
 	return paragraphs
+}
+
+func clean(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsGraphic(r) {
+			return r
+		}
+		return -1
+	}, s)
 }
 
 func isSection(text string) bool {
