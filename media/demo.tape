@@ -1,5 +1,7 @@
 
-Output examples/demo.gif
+Output media/demo.gif
+
+Require nachrichten
 
 Set Shell "zsh"
 Set FontSize 11
@@ -8,26 +10,25 @@ Set Height 600
 Set Padding 15
 Set WindowBar Colorful
 
-Type "nachrichten" Sleep 500ms
-Hide
-Ctrl+U
-Type "./nachrichten" Enter
-Show
+Set PlaybackSpeed 2.0
 
-Sleep 2s
+Type "nachrichten" Sleep 1000ms
+Enter
 
-Type j Sleep 200ms
-Type j Sleep 200ms
-Type j Sleep 200ms
-Type l Sleep 500ms
-Down@200ms 3
-Sleep 500ms
+Sleep 4s
+
+Type j Sleep 400ms
+Type j Sleep 400ms
+Type j Sleep 400ms
+Type l Sleep 1000ms
+Down@300ms 10
+Sleep 1000ms
+Type f Sleep 2000ms
+Type i Sleep 3000ms
 Type f Sleep 1000ms
-Type i Sleep 1500ms
-Type f Sleep 500ms
 Type i
 
-Sleep 1s
+Sleep 2s
 
 Type q
 
