@@ -8,10 +8,10 @@ import (
 )
 
 type Configuration struct {
-	Settings     Settings     `yaml:"Settings,omitempty"`
-	Keys         Keys         `yaml:"Keys,omitempty"`
-	Applications Applications `yaml:"Application,omitempty"`
-	Theme        Theme        `yaml:"Theme,omitempty"`
+	Settings     Settings     `yaml:"Settings"`
+	Keys         Keys         `yaml:"Keys"`
+	Applications Applications `yaml:"Application"`
+	Theme        Theme        `yaml:"Theme"`
 }
 
 type Settings struct {
@@ -49,10 +49,10 @@ type Theme struct {
 }
 
 type Applications struct {
-	Image Application `yaml:"Image,omitempty"`
-	Audio Application `yaml:"Audio,omitempty"`
-	Video Application `yaml:"Video,omitempty"`
-	HTML  Application `yaml:"HTML,omitempty"`
+	Image Application `yaml:"Image"`
+	Audio Application `yaml:"Audio"`
+	Video Application `yaml:"Video"`
+	HTML  Application `yaml:"HTML"`
 }
 
 type Application struct {
