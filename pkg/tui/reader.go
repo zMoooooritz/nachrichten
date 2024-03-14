@@ -71,7 +71,7 @@ func (r *Reader) SetDims(w, h int) {
 }
 
 func (r *Reader) SetContent(paragraphs []string) {
-	repr := util.FormatParagraphs(paragraphs, r.viewport.Width, r.style)
+	repr := util.FormatParagraphs(paragraphs, r.viewport.Width-2, r.style)
 	r.viewport.SetContent(repr)
 }
 

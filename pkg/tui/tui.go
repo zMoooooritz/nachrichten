@@ -173,6 +173,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		m.updateSizes(msg.Width, msg.Height)
+		m.updateDisplayedArticle()
 	default:
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
@@ -227,6 +228,10 @@ func (m *Model) toggelViewer(setFocus bool) {
 }
 
 func (m *Model) updateDisplayedArticle() {
+	if !m.ready {
+		return
+	}
+
 	article := m.getSelectedArticle()
 	if m.reader.isActive {
 		text := tagesschau.ContentToParagraphs(article.Content)
