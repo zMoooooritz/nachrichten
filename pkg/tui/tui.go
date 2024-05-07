@@ -18,6 +18,14 @@ const (
 	germanDateFormat string = "15:04 02.01.06"
 )
 
+type HelpState int
+
+const (
+	HS_HIDDEN HelpState = iota
+	HS_NORMAL
+	HS_ALL
+)
+
 var (
 	screenCentered = func(w, h int) lipgloss.Style {
 		return lipgloss.NewStyle().
@@ -37,7 +45,7 @@ type Model struct {
 	style       config.Style
 	ready       bool
 	help        help.Model
-	helpMode    int
+	helpState   HelpState
 	selector    Selector
 	reader      Reader
 	imageViewer ImageViewer
@@ -50,9 +58,9 @@ type Model struct {
 func InitialModel(c config.Configuration) Model {
 	style := config.NewsStyle(c.Theme)
 
-	helpMode := 1
+	helpState := HS_NORMAL
 	if c.Settings.HideHelpOnStartup {
-		helpMode = 0
+		helpState = HS_HIDDEN
 	}
 
 	m := Model{
@@ -61,7 +69,7 @@ func InitialModel(c config.Configuration) Model {
 		style:       style,
 		ready:       false,
 		help:        NewHelper(style),
-		helpMode:    helpMode,
+		helpState:   helpState,
 		selector:    NewSelector(style, listKeymap(c.Keys)),
 		reader:      NewReader(style, viewportKeymap(c.Keys)),
 		imageViewer: NewImageViewer(style, viewportKeymap(c.Keys)),
@@ -108,11 +116,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.quit):
 			return m, tea.Quit
 		case key.Matches(msg, m.keymap.help):
-			m.helpMode = (m.helpMode + 1) % 3
-			if m.helpMode == 1 {
+			m.helpState = (m.helpState + 1) % 3
+			if m.helpState == HS_NORMAL {
 				m.help.ShowAll = false
 			}
-			if m.helpMode == 2 {
+			if m.helpState == HS_ALL {
 				m.help.ShowAll = true
 			}
 			m.updateSizes(m.width, m.height)
@@ -287,7 +295,7 @@ func (m *Model) updateSizes(width, height int) {
 }
 
 func (m Model) helperHeight() int {
-	if m.helpMode > 0 {
+	if m.helpState == HS_NORMAL || m.helpState == HS_ALL {
 		return 2
 	}
 	return 0
@@ -309,7 +317,7 @@ func (m Model) View() string {
 	}
 
 	help := ""
-	if m.helpMode > 0 {
+	if m.helpState == HS_NORMAL || m.helpState == HS_ALL {
 		help = "\n" + lipgloss.NewStyle().Width(m.width).AlignHorizontal(lipgloss.Center).Render(m.help.View(m.keymap))
 	}
 
