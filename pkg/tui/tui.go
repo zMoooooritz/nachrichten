@@ -71,8 +71,8 @@ func InitialModel(c config.Configuration) Model {
 		help:        NewHelper(style),
 		helpState:   helpState,
 		selector:    NewSelector(style, listKeymap(c.Keys)),
-		reader:      NewReader(style, viewportKeymap(c.Keys)),
-		imageViewer: NewImageViewer(style, viewportKeymap(c.Keys)),
+		reader:      NewReader(style, viewportKeymap(c.Keys), true),
+		imageViewer: NewImageViewer(style, viewportKeymap(c.Keys), false),
 		spinner:     NewDotSpinner(),
 		config:      c,
 		width:       0,
@@ -242,9 +242,8 @@ func (m *Model) updateDisplayedArticle() {
 
 	article := m.getSelectedArticle()
 	if m.reader.isActive {
-		text := tagesschau.ContentToParagraphs(article.Content)
-		m.reader.SetContent(text)
-		m.reader.SetHeaderContent(article.Topline, article.Date)
+		m.reader.SetArticle(*article)
+		m.reader.SetHeaderData(article.Topline, article.Date)
 	}
 
 	if m.imageViewer.IsActive() {
@@ -257,8 +256,8 @@ func (m *Model) updateDisplayedArticle() {
 			}
 			article.Thumbnail = image
 		}
-		m.imageViewer.SetImage(image)
-		m.imageViewer.SetHeaderContent(article.Topline, article.Date)
+		m.imageViewer.SetArticle(*article)
+		m.imageViewer.SetHeaderData(article.Topline, article.Date)
 	}
 }
 

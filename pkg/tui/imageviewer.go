@@ -3,71 +3,35 @@ package tui
 import (
 	"fmt"
 	"image"
-	"strings"
-	"time"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/config"
+	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
 	"github.com/zMoooooritz/nachrichten/pkg/util"
 )
 
 type ImageViewer struct {
-	style        config.Style
-	isActive     bool
-	isFocused    bool
-	isFullScreen bool
-	toplineText  string
-	dateText     string
-	viewport     viewport.Model
-	image        image.Image
+	Viewer
+	image image.Image
 }
 
-func NewImageViewer(s config.Style, km viewport.KeyMap) ImageViewer {
+func NewImageViewer(s config.Style, km viewport.KeyMap, isActive bool) ImageViewer {
 	vp := viewport.New(0, 0)
 	vp.KeyMap = km
 	return ImageViewer{
-		style:    s,
-		isActive: false,
-		viewport: vp,
-		image:    image.Rect(0, 0, 1, 1),
+		Viewer: Viewer{
+			style:    s,
+			isActive: isActive,
+			viewport: vp,
+		},
+		image: image.Rect(0, 0, 1, 1),
 	}
 }
 
-func (i *ImageViewer) SetActive(isActive bool) {
-	i.isActive = isActive
-}
-
-func (i *ImageViewer) IsActive() bool {
-	return i.isActive
-}
-
-func (i *ImageViewer) SetFocused(isFocused bool) {
-	i.isFocused = isFocused
-}
-
-func (i *ImageViewer) IsFocused() bool {
-	return i.isFocused
-}
-
-func (i *ImageViewer) SetFullScreen(isFullScreen bool) {
-	i.isFullScreen = isFullScreen
-}
-
-func (i *ImageViewer) IsFullScreen() bool {
-	return i.isFullScreen
-}
-
-func (i *ImageViewer) SetDims(w, h int) {
-	i.viewport.Width = w
-	i.viewport.Height = h - lipgloss.Height(i.headerView()) - lipgloss.Height(i.footerView())
-	i.viewport.YPosition = lipgloss.Height(i.headerView())
-	i.PushImageToViewer()
-}
-
-func (i *ImageViewer) SetImage(img image.Image) {
-	i.image = img
+func (i *ImageViewer) SetArticle(article tagesschau.Article) {
+	i.image = article.Thumbnail
 	i.PushImageToViewer()
 }
 
@@ -89,11 +53,6 @@ func (i *ImageViewer) PushImageToViewer() {
 	i.viewport.SetContent(strRepr)
 }
 
-func (i *ImageViewer) SetHeaderContent(topline string, date time.Time) {
-	i.toplineText = topline
-	i.dateText = date.Format(germanDateFormat)
-}
-
 func (i ImageViewer) Init() tea.Cmd {
 	return nil
 }
@@ -109,39 +68,4 @@ func (i ImageViewer) View() string {
 		return ""
 	}
 	return fmt.Sprintf("%s\n%s\n%s", i.headerView(), i.viewport.View(), i.footerView())
-}
-
-func (i ImageViewer) headerView() string {
-	titleStyle := i.style.ReaderTitleInactiveStyle
-	lineStyle := i.style.InactiveStyle
-	dateStyle := i.style.ReaderInfoInactiveStyle
-	fillCharacter := config.SingleFillCharacter
-	if i.isFocused || i.isFullScreen {
-		titleStyle = i.style.ReaderTitleActiveStyle
-		lineStyle = i.style.ActiveStyle
-		dateStyle = i.style.ReaderInfoActiveStyle
-		fillCharacter = config.DoubleFillCharacter
-	}
-
-	title := titleStyle.Render(i.toplineText)
-	date := dateStyle.Render(i.dateText)
-	line := lineStyle.Render(strings.Repeat(fillCharacter, util.Max(0, i.viewport.Width-lipgloss.Width(title)-lipgloss.Width(date))))
-
-	return lipgloss.JoinHorizontal(lipgloss.Center, title, line, date)
-}
-
-func (i ImageViewer) footerView() string {
-	infoStyle := i.style.ReaderInfoInactiveStyle
-	lineStyle := i.style.InactiveStyle
-	fillCharacter := config.SingleFillCharacter
-	if i.isFocused || i.isFullScreen {
-		infoStyle = i.style.ReaderInfoActiveStyle
-		lineStyle = i.style.ActiveStyle
-		fillCharacter = config.DoubleFillCharacter
-	}
-
-	info := infoStyle.Render(fmt.Sprintf("%3.f%%", i.viewport.ScrollPercent()*100))
-	line := lineStyle.Render(strings.Repeat(fillCharacter, util.Max(0, i.viewport.Width-lipgloss.Width(info))))
-
-	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
 }
