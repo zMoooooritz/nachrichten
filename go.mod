@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.26.6
 	github.com/charmbracelet/glamour v0.7.0
-	github.com/charmbracelet/lipgloss v0.11.1
+	github.com/charmbracelet/lipgloss v0.12.0
 	github.com/muesli/reflow v0.3.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	gopkg.in/yaml.v3 v3.0.1
