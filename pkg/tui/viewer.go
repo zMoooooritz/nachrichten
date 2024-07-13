@@ -9,7 +9,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/config"
 	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
-	"github.com/zMoooooritz/nachrichten/pkg/util"
 )
 
 type ViewerImplementation interface {
@@ -93,7 +92,7 @@ func (v Viewer) headerView() string {
 
 	title := titleStyle.Render(v.title)
 	date := dateStyle.Render(v.date)
-	line := lineStyle.Render(strings.Repeat(fillCharacter, util.Max(0, v.viewport.Width-lipgloss.Width(title)-lipgloss.Width(date))))
+	line := lineStyle.Render(strings.Repeat(fillCharacter, max(0, v.viewport.Width-lipgloss.Width(title)-lipgloss.Width(date))))
 
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line, date)
 }
@@ -109,7 +108,7 @@ func (v Viewer) footerView() string {
 	}
 
 	info := infoStyle.Render(fmt.Sprintf("%3.f%%", v.viewport.ScrollPercent()*100))
-	line := lineStyle.Render(strings.Repeat(fillCharacter, util.Max(0, v.viewport.Width-lipgloss.Width(info))))
+	line := lineStyle.Render(strings.Repeat(fillCharacter, max(0, v.viewport.Width-lipgloss.Width(info))))
 
 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
 }
