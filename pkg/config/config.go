@@ -20,21 +20,23 @@ type Settings struct {
 }
 
 type Keys struct {
-	Up              []string `yaml:"Up"`
-	Down            []string `yaml:"Down"`
-	Left            []string `yaml:"Left"`
-	Right           []string `yaml:"Right"`
-	Prev            []string `yaml:"Prev"`
-	Next            []string `yaml:"Next"`
-	Full            []string `yaml:"Full"`
-	Start           []string `yaml:"Start"`
-	End             []string `yaml:"End"`
-	Quit            []string `yaml:"Quit"`
-	ToggleThumbnail []string `yaml:"ToggleThumbnail"`
-	OpenArticle     []string `yaml:"OpenArticle"`
-	OpenVideo       []string `yaml:"OpenVideo"`
-	OpenShortNews   []string `yaml:"OpenShortNews"`
-	Help            []string `yaml:"Help"`
+	Up            []string `yaml:"Up"`
+	Down          []string `yaml:"Down"`
+	Left          []string `yaml:"Left"`
+	Right         []string `yaml:"Right"`
+	Prev          []string `yaml:"Prev"`
+	Next          []string `yaml:"Next"`
+	Full          []string `yaml:"Full"`
+	Start         []string `yaml:"Start"`
+	End           []string `yaml:"End"`
+	Quit          []string `yaml:"Quit"`
+	ShowArticle   []string `yaml:"ShowArticle"`
+	ShowThumbnail []string `yaml:"ShowThumbnail"`
+	ShowDetails   []string `yaml:"ShowDetails"`
+	OpenArticle   []string `yaml:"OpenArticle"`
+	OpenVideo     []string `yaml:"OpenVideo"`
+	OpenShortNews []string `yaml:"OpenShortNews"`
+	Help          []string `yaml:"Help"`
 }
 
 type Theme struct {
@@ -94,21 +96,23 @@ func defaultConfiguration() Configuration {
 
 func defaultKeys() Keys {
 	return Keys{
-		Up:              []string{"k", "up"},
-		Down:            []string{"j", "down"},
-		Left:            []string{"h", "left"},
-		Right:           []string{"l", "right"},
-		Prev:            []string{"shift+tab"},
-		Next:            []string{"tab"},
-		Full:            []string{"f"},
-		Start:           []string{"g", "home"},
-		End:             []string{"G", "end"},
-		Quit:            []string{"q", "esc", "ctrl+c"},
-		ToggleThumbnail: []string{"i"},
-		OpenArticle:     []string{"o"},
-		OpenVideo:       []string{"v"},
-		OpenShortNews:   []string{"s"},
-		Help:            []string{"?"},
+		Up:            []string{"k", "up"},
+		Down:          []string{"j", "down"},
+		Left:          []string{"h", "left"},
+		Right:         []string{"l", "right"},
+		Prev:          []string{"shift+tab"},
+		Next:          []string{"tab"},
+		Full:          []string{"f"},
+		Start:         []string{"g", "home"},
+		End:           []string{"G", "end"},
+		Quit:          []string{"q", "esc", "ctrl+c"},
+		ShowArticle:   []string{"a"},
+		ShowThumbnail: []string{"i"},
+		ShowDetails:   []string{"d"},
+		OpenArticle:   []string{"o"},
+		OpenVideo:     []string{"v"},
+		OpenShortNews: []string{"s"},
+		Help:          []string{"?"},
 	}
 }
 

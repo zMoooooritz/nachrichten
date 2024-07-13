@@ -34,8 +34,12 @@ Keys:
     - q
     - esc
     - ctrl+c
-  ToggleThumbnail:
+  ShowArticle:
+    - a
+  ShowThumbnail:
     - i
+  ShowDetails:
+    - d
   OpenArticle:
     - o
   OpenVideo:

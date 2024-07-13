@@ -20,7 +20,7 @@ const (
 	VT_DETAILS
 )
 
-type ViewerImplementation interface {
+type Viewer interface {
 	SetArticle(tagesschau.Article)
 	ViewerType() ViewerType
 	GotoTop()
@@ -34,11 +34,11 @@ type ViewerImplementation interface {
 	SetDims(int, int)
 	SetHeaderData(string, time.Time)
 	Init() tea.Cmd
-	Update(tea.Msg) (ViewerImplementation, tea.Cmd)
+	Update(tea.Msg) (Viewer, tea.Cmd)
 	View() string
 }
 
-type Viewer struct {
+type BaseViewer struct {
 	viewerType   ViewerType
 	style        config.Style
 	isActive     bool
@@ -49,10 +49,10 @@ type Viewer struct {
 	viewport     viewport.Model
 }
 
-func NewViewer(viewerType ViewerType, s config.Style, km viewport.KeyMap, isActive bool) Viewer {
+func NewViewer(viewerType ViewerType, s config.Style, km viewport.KeyMap, isActive bool) BaseViewer {
 	vp := viewport.New(0, 0)
 	vp.KeyMap = km
-	return Viewer{
+	return BaseViewer{
 		viewerType: viewerType,
 		style:      s,
 		isActive:   isActive,
@@ -60,72 +60,72 @@ func NewViewer(viewerType ViewerType, s config.Style, km viewport.KeyMap, isActi
 	}
 }
 
-func (v *Viewer) SetArticle(article tagesschau.Article) {
+func (v *BaseViewer) SetArticle(article tagesschau.Article) {
 }
 
-func (v Viewer) ViewerType() ViewerType {
+func (v BaseViewer) ViewerType() ViewerType {
 	return v.viewerType
 }
 
-func (v *Viewer) GotoTop() {
+func (v *BaseViewer) GotoTop() {
 	v.viewport.GotoTop()
 }
 
-func (v *Viewer) GotoBottom() {
+func (v *BaseViewer) GotoBottom() {
 	v.viewport.GotoBottom()
 }
 
-func (v *Viewer) SetActive(isActive bool) {
+func (v *BaseViewer) SetActive(isActive bool) {
 	v.isActive = isActive
 }
 
-func (v *Viewer) IsActive() bool {
+func (v *BaseViewer) IsActive() bool {
 	return v.isActive
 }
 
-func (v *Viewer) SetFocused(isFocused bool) {
+func (v *BaseViewer) SetFocused(isFocused bool) {
 	v.isFocused = isFocused
 }
 
-func (v *Viewer) IsFocused() bool {
+func (v *BaseViewer) IsFocused() bool {
 	return v.isFocused
 }
 
-func (v *Viewer) SetFullScreen(isFullScreen bool) {
+func (v *BaseViewer) SetFullScreen(isFullScreen bool) {
 	v.isFullScreen = isFullScreen
 }
 
-func (v *Viewer) IsFullScreen() bool {
+func (v *BaseViewer) IsFullScreen() bool {
 	return v.isFullScreen
 }
 
-func (v *Viewer) SetDims(w, h int) {
+func (v *BaseViewer) SetDims(w, h int) {
 	v.viewport.Width = w
 	v.viewport.Height = h - lipgloss.Height(v.headerView()) - lipgloss.Height(v.footerView())
 	v.viewport.YPosition = lipgloss.Height(v.headerView())
 }
 
-func (v *Viewer) SetHeaderData(title string, date time.Time) {
+func (v *BaseViewer) SetHeaderData(title string, date time.Time) {
 	v.title = title
 	v.date = date.Format(germanDateFormat)
 }
 
-func (v Viewer) Init() tea.Cmd {
+func (v BaseViewer) Init() tea.Cmd {
 	return nil
 }
 
-func (v Viewer) Update(msg tea.Msg) (Viewer, tea.Cmd) {
+func (v BaseViewer) Update(msg tea.Msg) (BaseViewer, tea.Cmd) {
 	return v, nil
 }
 
-func (v Viewer) View() string {
+func (v BaseViewer) View() string {
 	if !v.isActive {
 		return ""
 	}
 	return fmt.Sprintf("%s\n%s\n%s", v.headerView(), v.viewport.View(), v.footerView())
 }
 
-func (v Viewer) headerView() string {
+func (v BaseViewer) headerView() string {
 	titleStyle := v.style.ReaderTitleInactiveStyle
 	lineStyle := v.style.InactiveStyle
 	dateStyle := v.style.ReaderInfoInactiveStyle
@@ -144,7 +144,7 @@ func (v Viewer) headerView() string {
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line, date)
 }
 
-func (v Viewer) footerView() string {
+func (v BaseViewer) footerView() string {
 	infoStyle := v.style.ReaderInfoInactiveStyle
 	lineStyle := v.style.InactiveStyle
 	fillCharacter := config.SingleFillCharacter

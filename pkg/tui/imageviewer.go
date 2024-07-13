@@ -10,21 +10,21 @@ import (
 )
 
 type ImageViewer struct {
-	Viewer
+	BaseViewer
 	image image.Image
 }
 
-func NewImageViewer(viewer Viewer) *ImageViewer {
+func NewImageViewer(viewer BaseViewer) *ImageViewer {
 	return &ImageViewer{
-		Viewer: viewer,
-		image:  image.Rect(0, 0, 1, 1),
+		BaseViewer: viewer,
+		image:      image.Rect(0, 0, 1, 1),
 	}
 }
 
-func (i ImageViewer) Update(msg tea.Msg) (ViewerImplementation, tea.Cmd) {
+func (i ImageViewer) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 	var cmd tea.Cmd
 	i.viewport, cmd = i.viewport.Update(msg)
-	return &ImageViewer{Viewer: i.Viewer, image: i.image}, cmd
+	return &ImageViewer{BaseViewer: i.BaseViewer, image: i.image}, cmd
 }
 
 func (i *ImageViewer) SetArticle(article tagesschau.Article) {

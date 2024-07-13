@@ -9,19 +9,19 @@ import (
 )
 
 type Reader struct {
-	Viewer
+	BaseViewer
 }
 
-func NewReader(viewer Viewer) *Reader {
+func NewReader(viewer BaseViewer) *Reader {
 	return &Reader{
-		Viewer: viewer,
+		BaseViewer: viewer,
 	}
 }
 
-func (r Reader) Update(msg tea.Msg) (ViewerImplementation, tea.Cmd) {
+func (r Reader) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 	var cmd tea.Cmd
 	r.viewport, cmd = r.viewport.Update(msg)
-	return &Reader{Viewer: r.Viewer}, cmd
+	return &Reader{BaseViewer: r.BaseViewer}, cmd
 }
 
 func (r *Reader) SetArticle(article tagesschau.Article) {

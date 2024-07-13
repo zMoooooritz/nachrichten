@@ -19,15 +19,11 @@ const (
 )
 
 type HelpState int
-type SwitchDirection int
 
 const (
 	HS_HIDDEN HelpState = iota
 	HS_NORMAL
 	HS_ALL
-
-	SD_NEXT SwitchDirection = iota
-	SD_PREV
 )
 
 var (
@@ -51,7 +47,7 @@ type Model struct {
 	help      help.Model
 	helpState HelpState
 	selector  Selector
-	viewers   []ViewerImplementation
+	viewers   []Viewer
 	spinner   spinner.Model
 	config    config.Configuration
 	width     int
@@ -66,9 +62,10 @@ func InitialModel(c config.Configuration) Model {
 		helpState = HS_HIDDEN
 	}
 
-	viewers := []ViewerImplementation{}
+	viewers := []Viewer{}
 	viewers = append(viewers, NewReader(NewViewer(VT_TEXT, style, viewportKeymap(c.Keys), true)))
 	viewers = append(viewers, NewImageViewer(NewViewer(VT_IMAGE, style, viewportKeymap(c.Keys), false)))
+	viewers = append(viewers, NewDetails(NewViewer(VT_DETAILS, style, viewportKeymap(c.Keys), false)))
 
 	m := Model{
 		opener:    util.NewOpener(c.Applications),
@@ -138,29 +135,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.selector.IsFocused() {
 				m.selector.NextList()
 				m.updateDisplayedArticle()
-			} else {
-				m.switchViewer(SD_NEXT)
 			}
 		case key.Matches(msg, m.keymap.prev):
 			if m.selector.IsFocused() {
 				m.selector.PrevList()
 				m.updateDisplayedArticle()
-			} else {
-				m.switchViewer(SD_PREV)
 			}
 		case key.Matches(msg, m.keymap.full):
-			for idx1, viewer := range m.viewers {
-				if viewer.IsActive() {
-					viewer.SetFocused(true)
-					m.selector.SetFocused(false)
-					currentState := viewer.IsFullScreen()
-					for idx2, viewer2 := range m.viewers {
-						if idx1 == idx2 {
-							viewer2.SetFullScreen(!currentState)
-						} else {
-							viewer2.SetFullScreen(currentState)
-						}
-					}
+			activeViewer := m.viewers[m.activeViewerIndex()]
+
+			activeViewer.SetFocused(true)
+			m.selector.SetFocused(false)
+			currentState := activeViewer.IsFullScreen()
+			for _, viewer := range m.viewers {
+				if activeViewer.ViewerType() == activeViewer.ViewerType() {
+					viewer.SetFullScreen(!currentState)
+				} else {
+					viewer.SetFullScreen(currentState)
 				}
 			}
 
@@ -178,8 +169,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					viewer.GotoBottom()
 				}
 			}
+		case key.Matches(msg, m.keymap.article):
+			m.showViewer(VT_TEXT)
 		case key.Matches(msg, m.keymap.image):
-			m.showImageViewer()
+			m.showViewer(VT_IMAGE)
+		case key.Matches(msg, m.keymap.details):
+			m.showViewer(VT_DETAILS)
 		case key.Matches(msg, m.keymap.open):
 			article := m.getSelectedArticle()
 			m.opener.OpenUrl(util.TypeHTML, article.URL)
@@ -224,13 +219,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m Model) activeViewerIndex() int {
+	for index, viewer := range m.viewers {
+		if viewer.IsActive() {
+			return index
+		}
+	}
+	return 0
+}
+
 func (m *Model) setFocus(onViewer bool) {
 	if onViewer {
-		for _, viewer := range m.viewers {
-			if viewer.IsActive() {
-				viewer.SetFocused(true)
-			}
-		}
+		m.viewers[m.activeViewerIndex()].SetFocused(true)
 		m.selector.SetFocused(false)
 	} else {
 		for _, viewer := range m.viewers {
@@ -241,40 +241,15 @@ func (m *Model) setFocus(onViewer bool) {
 	m.updateDisplayedArticle()
 }
 
-func (m *Model) switchViewer(switchDirection SwitchDirection) {
-	currentIndex := -1
-	for index, viewer := range m.viewers {
-		if viewer.IsActive() {
-			currentIndex = index
-		}
-	}
-	newIndex := 0
-	if currentIndex != -1 {
-		if switchDirection == SD_NEXT {
-			newIndex = (currentIndex + 1) % len(m.viewers)
-		} else {
-			newIndex = (currentIndex + len(m.viewers) - 1) % len(m.viewers)
-		}
-
-		m.viewers[currentIndex].SetActive(false)
-		m.viewers[currentIndex].SetFocused(false)
-		m.viewers[newIndex].SetActive(true)
-		m.viewers[newIndex].SetFocused(true)
-	}
-	m.updateDisplayedArticle()
-}
-
-func (m *Model) showImageViewer() {
+func (m *Model) showViewer(vt ViewerType) {
 	for _, viewer := range m.viewers {
-		if viewer.ViewerType() == VT_IMAGE {
+		if viewer.ViewerType() == vt {
 			viewer.SetActive(true)
-			viewer.SetFocused(true)
 		} else {
 			viewer.SetActive(false)
-			viewer.SetFocused(false)
 		}
 	}
-	m.selector.SetFocused(false)
+	m.updateDisplayedArticle()
 }
 
 func (m *Model) updateDisplayedArticle() {
@@ -284,23 +259,20 @@ func (m *Model) updateDisplayedArticle() {
 
 	article := m.getSelectedArticle()
 
-	for _, viewer := range m.viewers {
-		if viewer.IsActive() {
-			if viewer.ViewerType() == VT_IMAGE {
-				image := article.Thumbnail
-				if image == nil {
-					var err error
-					image, err = http.LoadImage(article.ImageData.ImageVariants.RectSmall)
-					if err != nil {
-						return
-					}
-					article.Thumbnail = image
-				}
+	activeViewer := m.viewers[m.activeViewerIndex()]
+	if activeViewer.ViewerType() == VT_IMAGE {
+		image := article.Thumbnail
+		if image == nil {
+			var err error
+			image, err = http.LoadImage(article.ImageData.ImageVariants.RectSmall)
+			if err != nil {
+				return
 			}
-			viewer.SetArticle(*article)
-			viewer.SetHeaderData(article.Topline, article.Date)
+			article.Thumbnail = image
 		}
 	}
+	activeViewer.SetArticle(*article)
+	activeViewer.SetHeaderData(article.Topline, article.Date)
 }
 
 func (m *Model) getSelectedArticle() *tagesschau.Article {
@@ -350,17 +322,11 @@ func (m Model) View() string {
 	}
 
 	selector := m.selector.View()
-	viewerRepr := ""
-	for _, viewer := range m.viewers {
-		if viewer.IsActive() {
-			viewerRepr = viewer.View()
-		}
-	}
-
+	viewer := m.viewers[m.activeViewerIndex()].View()
 	help := ""
 	if m.helpState == HS_NORMAL || m.helpState == HS_ALL {
 		help = "\n" + lipgloss.NewStyle().Width(m.width).AlignHorizontal(lipgloss.Center).Render(m.help.View(m.keymap))
 	}
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, selector, viewerRepr) + help
+	return lipgloss.JoinHorizontal(lipgloss.Top, selector, viewer) + help
 }

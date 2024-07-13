@@ -18,7 +18,9 @@ type KeyMap struct {
 	full      key.Binding
 	start     key.Binding
 	end       key.Binding
+	article   key.Binding
 	image     key.Binding
+	details   key.Binding
 	open      key.Binding
 	video     key.Binding
 	shortNews key.Binding
@@ -37,7 +39,9 @@ func GetKeyMap(keys config.Keys) KeyMap {
 		full:      toHelpBinding(keys.Full, "full"),
 		start:     toHelpBinding(keys.Start, "start"),
 		end:       toHelpBinding(keys.End, "end"),
-		image:     toHelpBinding(keys.ToggleThumbnail, "image"),
+		article:   toHelpBinding(keys.ShowArticle, "article"),
+		image:     toHelpBinding(keys.ShowThumbnail, "image"),
+		details:   toHelpBinding(keys.ShowDetails, "details"),
 		open:      toHelpBinding(keys.OpenArticle, "open"),
 		video:     toHelpBinding(keys.OpenVideo, "video"),
 		shortNews: toHelpBinding(keys.OpenShortNews, "shortnews"),
@@ -140,7 +144,9 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 		{k.full},
 		{k.start},
 		{k.end},
+		{k.article},
 		{k.image},
+		{k.details},
 		{k.open},
 		{k.video},
 		{k.shortNews},
