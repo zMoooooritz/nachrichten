@@ -19,11 +19,15 @@ const (
 )
 
 type HelpState int
+type SwitchDirection int
 
 const (
 	HS_HIDDEN HelpState = iota
 	HS_NORMAL
 	HS_ALL
+
+	SD_NEXT SwitchDirection = iota
+	SD_PREV
 )
 
 var (
@@ -40,19 +44,18 @@ var (
 )
 
 type Model struct {
-	opener      util.Opener
-	keymap      KeyMap
-	style       config.Style
-	ready       bool
-	help        help.Model
-	helpState   HelpState
-	selector    Selector
-	reader      Reader
-	imageViewer ImageViewer
-	spinner     spinner.Model
-	config      config.Configuration
-	width       int
-	height      int
+	opener    util.Opener
+	keymap    KeyMap
+	style     config.Style
+	ready     bool
+	help      help.Model
+	helpState HelpState
+	selector  Selector
+	viewers   []ViewerImplementation
+	spinner   spinner.Model
+	config    config.Configuration
+	width     int
+	height    int
 }
 
 func InitialModel(c config.Configuration) Model {
@@ -63,20 +66,23 @@ func InitialModel(c config.Configuration) Model {
 		helpState = HS_HIDDEN
 	}
 
+	viewers := []ViewerImplementation{}
+	viewers = append(viewers, NewReader(NewViewer(VT_TEXT, style, viewportKeymap(c.Keys), true)))
+	viewers = append(viewers, NewImageViewer(NewViewer(VT_IMAGE, style, viewportKeymap(c.Keys), false)))
+
 	m := Model{
-		opener:      util.NewOpener(c.Applications),
-		keymap:      GetKeyMap(c.Keys),
-		style:       style,
-		ready:       false,
-		help:        NewHelper(style),
-		helpState:   helpState,
-		selector:    NewSelector(style, listKeymap(c.Keys)),
-		reader:      NewReader(style, viewportKeymap(c.Keys), true),
-		imageViewer: NewImageViewer(style, viewportKeymap(c.Keys), false),
-		spinner:     NewDotSpinner(),
-		config:      c,
-		width:       0,
-		height:      0,
+		opener:    util.NewOpener(c.Applications),
+		keymap:    GetKeyMap(c.Keys),
+		style:     style,
+		ready:     false,
+		help:      NewHelper(style),
+		helpState: helpState,
+		selector:  NewSelector(style, listKeymap(c.Keys)),
+		viewers:   viewers,
+		spinner:   NewDotSpinner(),
+		config:    c,
+		width:     0,
+		height:    0,
 	}
 	return m
 }
@@ -133,40 +139,47 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selector.NextList()
 				m.updateDisplayedArticle()
 			} else {
-				m.toggelViewer(true)
+				m.switchViewer(SD_NEXT)
 			}
 		case key.Matches(msg, m.keymap.prev):
 			if m.selector.IsFocused() {
 				m.selector.PrevList()
 				m.updateDisplayedArticle()
 			} else {
-				m.toggelViewer(true)
+				m.switchViewer(SD_PREV)
 			}
 		case key.Matches(msg, m.keymap.full):
-			if m.reader.IsActive() {
-				m.reader.SetFocused(true)
-				m.selector.SetFocused(false)
-				m.reader.SetFullScreen(!m.reader.IsFullScreen())
-				m.imageViewer.SetFullScreen(m.reader.IsFullScreen())
+			for idx1, viewer := range m.viewers {
+				if viewer.IsActive() {
+					viewer.SetFocused(true)
+					m.selector.SetFocused(false)
+					currentState := viewer.IsFullScreen()
+					for idx2, viewer2 := range m.viewers {
+						if idx1 == idx2 {
+							viewer2.SetFullScreen(!currentState)
+						} else {
+							viewer2.SetFullScreen(currentState)
+						}
+					}
+				}
 			}
-			if m.imageViewer.IsActive() {
-				m.imageViewer.SetFocused(true)
-				m.selector.SetFocused(false)
-				m.imageViewer.SetFullScreen(!m.imageViewer.IsFullScreen())
-				m.reader.SetFullScreen(m.imageViewer.IsFullScreen())
-			}
+
 			m.updateSizes(m.width, m.height)
 			m.updateDisplayedArticle()
 		case key.Matches(msg, m.keymap.start):
-			if m.reader.IsFocused() {
-				m.reader.GotoTop()
+			for _, viewer := range m.viewers {
+				if viewer.IsFocused() {
+					viewer.GotoTop()
+				}
 			}
 		case key.Matches(msg, m.keymap.end):
-			if m.reader.IsFocused() {
-				m.reader.GotoBottom()
+			for _, viewer := range m.viewers {
+				if viewer.IsFocused() {
+					viewer.GotoBottom()
+				}
 			}
 		case key.Matches(msg, m.keymap.image):
-			m.toggelViewer(!m.selector.IsFocused())
+			m.showImageViewer()
 		case key.Matches(msg, m.keymap.open):
 			article := m.getSelectedArticle()
 			m.opener.OpenUrl(util.TypeHTML, article.URL)
@@ -191,13 +204,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	}
 
-	if m.reader.IsFocused() || m.reader.IsFullScreen() {
-		m.reader, cmd = m.reader.Update(msg)
-		cmds = append(cmds, cmd)
-	} else if m.imageViewer.IsFocused() || m.imageViewer.IsFullScreen() {
-		m.imageViewer, cmd = m.imageViewer.Update(msg)
-		cmds = append(cmds, cmd)
-	} else {
+	updatedViewer := false
+	for i, viewer := range m.viewers {
+		if viewer.IsFocused() || viewer.IsFullScreen() {
+			updateViewer, cmd := viewer.Update(msg)
+			m.viewers[i] = updateViewer
+			cmds = append(cmds, cmd)
+			updatedViewer = true
+		}
+	}
+	if !updatedViewer {
 		m.selector, cmd = m.selector.Update(msg)
 		cmds = append(cmds, cmd)
 		if m.selector.HasSelectionChanged() {
@@ -210,29 +226,55 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) setFocus(onViewer bool) {
 	if onViewer {
-		if m.reader.IsActive() {
-			m.reader.SetFocused(true)
-		}
-		if m.imageViewer.IsActive() {
-			m.imageViewer.SetFocused(true)
+		for _, viewer := range m.viewers {
+			if viewer.IsActive() {
+				viewer.SetFocused(true)
+			}
 		}
 		m.selector.SetFocused(false)
 	} else {
-		m.reader.SetFocused(false)
-		m.imageViewer.SetFocused(false)
+		for _, viewer := range m.viewers {
+			viewer.SetFocused(false)
+		}
 		m.selector.SetFocused(true)
 	}
 	m.updateDisplayedArticle()
 }
 
-func (m *Model) toggelViewer(setFocus bool) {
-	m.reader.SetActive(!m.reader.IsActive())
-	m.imageViewer.SetActive(!m.imageViewer.IsActive())
-	if setFocus {
-		m.reader.SetFocused(!m.reader.IsFocused())
-		m.imageViewer.SetFocused(!m.imageViewer.IsFocused())
+func (m *Model) switchViewer(switchDirection SwitchDirection) {
+	currentIndex := -1
+	for index, viewer := range m.viewers {
+		if viewer.IsActive() {
+			currentIndex = index
+		}
+	}
+	newIndex := 0
+	if currentIndex != -1 {
+		if switchDirection == SD_NEXT {
+			newIndex = (currentIndex + 1) % len(m.viewers)
+		} else {
+			newIndex = (currentIndex + len(m.viewers) - 1) % len(m.viewers)
+		}
+
+		m.viewers[currentIndex].SetActive(false)
+		m.viewers[currentIndex].SetFocused(false)
+		m.viewers[newIndex].SetActive(true)
+		m.viewers[newIndex].SetFocused(true)
 	}
 	m.updateDisplayedArticle()
+}
+
+func (m *Model) showImageViewer() {
+	for _, viewer := range m.viewers {
+		if viewer.ViewerType() == VT_IMAGE {
+			viewer.SetActive(true)
+			viewer.SetFocused(true)
+		} else {
+			viewer.SetActive(false)
+			viewer.SetFocused(false)
+		}
+	}
+	m.selector.SetFocused(false)
 }
 
 func (m *Model) updateDisplayedArticle() {
@@ -241,23 +283,23 @@ func (m *Model) updateDisplayedArticle() {
 	}
 
 	article := m.getSelectedArticle()
-	if m.reader.isActive {
-		m.reader.SetArticle(*article)
-		m.reader.SetHeaderData(article.Topline, article.Date)
-	}
 
-	if m.imageViewer.IsActive() {
-		image := article.Thumbnail
-		if image == nil {
-			var err error
-			image, err = http.LoadImage(article.ImageData.ImageVariants.RectSmall)
-			if err != nil {
-				return
+	for _, viewer := range m.viewers {
+		if viewer.IsActive() {
+			if viewer.ViewerType() == VT_IMAGE {
+				image := article.Thumbnail
+				if image == nil {
+					var err error
+					image, err = http.LoadImage(article.ImageData.ImageVariants.RectSmall)
+					if err != nil {
+						return
+					}
+					article.Thumbnail = image
+				}
 			}
-			article.Thumbnail = image
+			viewer.SetArticle(*article)
+			viewer.SetHeaderData(article.Topline, article.Date)
 		}
-		m.imageViewer.SetArticle(*article)
-		m.imageViewer.SetHeaderData(article.Topline, article.Date)
 	}
 }
 
@@ -276,18 +318,19 @@ func (m *Model) updateSizes(width, height int) {
 	m.selector.SetDims(m.width/3, m.height-m.helperHeight()-5)
 	m.selector.ResizeLists()
 
-	if m.reader.IsFullScreen() {
-		m.selector.SetVisible(false)
-		m.reader.SetDims(m.width, m.height-m.helperHeight())
+	isViewerFullscreen := false
+	for _, viewer := range m.viewers {
+		if viewer.IsFullScreen() {
+			m.selector.SetVisible(false)
+			viewer.SetDims(m.width, m.height-m.helperHeight())
+			isViewerFullscreen = true
+		}
 	}
-	if m.imageViewer.IsFullScreen() {
-		m.selector.SetVisible(false)
-		m.imageViewer.SetDims(m.width, m.height-m.helperHeight())
-	}
-	if !m.reader.IsFullScreen() && !m.imageViewer.IsFullScreen() {
+	if !isViewerFullscreen {
 		m.selector.SetVisible(true)
-		m.reader.SetDims(m.width-m.width/3-6, m.height-m.helperHeight())
-		m.imageViewer.SetDims(m.width-m.width/3-6, m.height-m.helperHeight())
+		for _, viewer := range m.viewers {
+			viewer.SetDims(m.width-m.width/3-6, m.height-m.helperHeight())
+		}
 	}
 
 	m.help.Width = m.width
@@ -307,12 +350,11 @@ func (m Model) View() string {
 	}
 
 	selector := m.selector.View()
-	viewer := ""
-	if m.reader.IsActive() {
-		viewer = m.reader.View()
-	}
-	if m.imageViewer.IsActive() {
-		viewer = m.imageViewer.View()
+	viewerRepr := ""
+	for _, viewer := range m.viewers {
+		if viewer.IsActive() {
+			viewerRepr = viewer.View()
+		}
 	}
 
 	help := ""
@@ -320,5 +362,5 @@ func (m Model) View() string {
 		help = "\n" + lipgloss.NewStyle().Width(m.width).AlignHorizontal(lipgloss.Center).Render(m.help.View(m.keymap))
 	}
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, selector, viewer) + help
+	return lipgloss.JoinHorizontal(lipgloss.Top, selector, viewerRepr) + help
 }
