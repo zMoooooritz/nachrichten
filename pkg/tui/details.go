@@ -2,11 +2,12 @@ package tui
 
 import (
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss/list"
 	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Details struct {
@@ -36,12 +37,13 @@ func (d Details) buildDetails(article tagesschau.Article) string {
 	}
 	title := fmt.Sprintf("Titel: %s", article.Desc)
 	region := fmt.Sprintf("Region: %s", tagesschau.GERMAN_NAMES[article.RegionID])
-	ressort := fmt.Sprintf("Ressort: %s", strings.Title(article.Ressort))
+	caser := cases.Title(language.English)
+	ressort := fmt.Sprintf("Ressort: %s", caser.String(article.Ressort))
 	breaking := ""
 	if article.Breaking {
-		breaking = fmt.Sprintf("Eilmeldung: ja")
+		breaking = "Eilmeldung: ja"
 	} else {
-		breaking = fmt.Sprintf("Eilmeldung: nein")
+		breaking = "Eilmeldung: nein"
 	}
 	l := list.New(
 		title, list.New(),

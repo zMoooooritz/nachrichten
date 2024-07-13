@@ -60,7 +60,9 @@ The default keybinds are as follows:
 | g / G            | goto start / end       |
 | tab / shift+tab  | change tabs            |
 | f                | maximize reader/viewer |
-| i                | toggle thumbnail       |
+| a                | show article view      |
+| i                | show thumbnail view    |
+| d                | show details view      |
 | o                | open article url       |
 | v                | open article vod       |
 | s                | open current news vod  |
