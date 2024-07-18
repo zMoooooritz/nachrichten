@@ -46,6 +46,7 @@ type BaseViewer struct {
 	isFullScreen bool
 	title        string
 	date         string
+	modeName     string
 	viewport     viewport.Model
 }
 
@@ -61,6 +62,10 @@ func NewViewer(viewerType ViewerType, s config.Style, km viewport.KeyMap, isActi
 }
 
 func (v *BaseViewer) SetArticle(article tagesschau.Article) {
+}
+
+func (v BaseViewer) GetModeText() string {
+	return ""
 }
 
 func (v BaseViewer) ViewerType() ViewerType {
@@ -145,17 +150,23 @@ func (v BaseViewer) headerView() string {
 }
 
 func (v BaseViewer) footerView() string {
+	modeStyle := v.style.ReaderTitleInactiveStyle
 	infoStyle := v.style.ReaderInfoInactiveStyle
 	lineStyle := v.style.InactiveStyle
 	fillCharacter := config.SingleFillCharacter
 	if v.isFocused || v.isFullScreen {
+		modeStyle = v.style.ReaderTitleActiveStyle
 		infoStyle = v.style.ReaderInfoActiveStyle
 		lineStyle = v.style.ActiveStyle
 		fillCharacter = config.DoubleFillCharacter
 	}
 
+	mode := ""
+	if v.modeName != "" {
+		mode = modeStyle.Render(v.modeName)
+	}
 	info := infoStyle.Render(fmt.Sprintf("%3.f%%", v.viewport.ScrollPercent()*100))
-	line := lineStyle.Render(strings.Repeat(fillCharacter, max(0, v.viewport.Width-lipgloss.Width(info))))
+	line := lineStyle.Render(strings.Repeat(fillCharacter, max(0, v.viewport.Width-lipgloss.Width(mode)-lipgloss.Width(info))))
 
-	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
+	return lipgloss.JoinHorizontal(lipgloss.Center, mode, line, info)
 }

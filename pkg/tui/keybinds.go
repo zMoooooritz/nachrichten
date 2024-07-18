@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strconv"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -25,6 +27,7 @@ type KeyMap struct {
 	video     key.Binding
 	shortNews key.Binding
 	help      key.Binding
+	number    []key.Binding
 }
 
 func GetKeyMap(keys config.Keys) KeyMap {
@@ -46,7 +49,16 @@ func GetKeyMap(keys config.Keys) KeyMap {
 		video:     toHelpBinding(keys.OpenVideo, "video"),
 		shortNews: toHelpBinding(keys.OpenShortNews, "shortnews"),
 		help:      toHelpBinding(keys.Help, "help"),
+		number:    getNumberBinds(),
 	}
+}
+
+func getNumberBinds() []key.Binding {
+	binds := []key.Binding{}
+	for i := range 10 {
+		binds = append(binds, key.NewBinding(key.WithKeys(strconv.Itoa(i))))
+	}
+	return binds
 }
 
 func toHelpBinding(binds []string, name string) key.Binding {

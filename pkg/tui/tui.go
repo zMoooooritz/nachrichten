@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -40,18 +41,19 @@ var (
 )
 
 type Model struct {
-	opener    util.Opener
-	keymap    KeyMap
-	style     config.Style
-	ready     bool
-	help      help.Model
-	helpState HelpState
-	selector  Selector
-	viewers   []Viewer
-	spinner   spinner.Model
-	config    config.Configuration
-	width     int
-	height    int
+	opener        util.Opener
+	keymap        KeyMap
+	style         config.Style
+	ready         bool
+	help          help.Model
+	helpState     HelpState
+	selector      Selector
+	viewers       []Viewer
+	spinner       spinner.Model
+	config        config.Configuration
+	activeArticle *tagesschau.Article
+	width         int
+	height        int
 }
 
 func InitialModel(c config.Configuration) Model {
@@ -68,18 +70,19 @@ func InitialModel(c config.Configuration) Model {
 	viewers = append(viewers, NewDetails(NewViewer(VT_DETAILS, style, viewportKeymap(c.Keys), false)))
 
 	m := Model{
-		opener:    util.NewOpener(c.Applications),
-		keymap:    GetKeyMap(c.Keys),
-		style:     style,
-		ready:     false,
-		help:      NewHelper(style),
-		helpState: helpState,
-		selector:  NewSelector(style, listKeymap(c.Keys)),
-		viewers:   viewers,
-		spinner:   NewDotSpinner(),
-		config:    c,
-		width:     0,
-		height:    0,
+		opener:        util.NewOpener(c.Applications),
+		keymap:        GetKeyMap(c.Keys),
+		style:         style,
+		ready:         false,
+		help:          NewHelper(style),
+		helpState:     helpState,
+		selector:      NewSelector(style, listKeymap(c.Keys)),
+		viewers:       viewers,
+		spinner:       NewDotSpinner(),
+		config:        c,
+		activeArticle: nil,
+		width:         0,
+		height:        0,
 	}
 	return m
 }
@@ -109,7 +112,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.selector.FillLists(news)
 		m.selector.ResizeLists()
 		m.ready = true
-		m.updateDisplayedArticle()
+		m.activeArticle = &news.NationalNews[0]
+		m.updateActiveViewer()
 	case tea.KeyMsg:
 		if !m.ready {
 			return m, tea.Batch(cmds...)
@@ -134,12 +138,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.next):
 			if m.selector.IsFocused() {
 				m.selector.NextList()
-				m.updateDisplayedArticle()
+				m.updateActiveArticle()
+				m.updateActiveViewer()
 			}
 		case key.Matches(msg, m.keymap.prev):
 			if m.selector.IsFocused() {
 				m.selector.PrevList()
-				m.updateDisplayedArticle()
+				m.updateActiveArticle()
+				m.updateActiveViewer()
 			}
 		case key.Matches(msg, m.keymap.full):
 			activeViewer := m.viewers[m.activeViewerIndex()]
@@ -156,7 +162,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			m.updateSizes(m.width, m.height)
-			m.updateDisplayedArticle()
+			m.updateActiveViewer()
 		case key.Matches(msg, m.keymap.start):
 			for _, viewer := range m.viewers {
 				if viewer.IsFocused() {
@@ -176,20 +182,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.details):
 			m.showViewer(VT_DETAILS)
 		case key.Matches(msg, m.keymap.open):
-			article := m.getSelectedArticle()
-			m.opener.OpenUrl(util.TypeHTML, article.URL)
+			m.opener.OpenUrl(util.TypeHTML, m.activeArticle.URL)
 		case key.Matches(msg, m.keymap.video):
-			article := m.getSelectedArticle()
-			m.opener.OpenUrl(util.TypeVideo, article.Video.VideoVariants.Big)
+			m.opener.OpenUrl(util.TypeVideo, m.activeArticle.Video.VideoVariants.Big)
 		case key.Matches(msg, m.keymap.shortNews):
 			url, err := tagesschau.GetShortNewsURL()
 			if err == nil {
 				m.opener.OpenUrl(util.TypeVideo, url)
 			}
 		}
+		keyStr := msg.String()
+		if keyStr >= "0" && keyStr <= "9" {
+			keyInt, _ := strconv.Atoi(keyStr)
+			m.handleNumberInput(keyInt)
+		}
 	case tea.WindowSizeMsg:
 		m.updateSizes(msg.Width, msg.Height)
-		m.updateDisplayedArticle()
+		m.updateActiveViewer()
 	default:
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
@@ -212,7 +221,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.selector, cmd = m.selector.Update(msg)
 		cmds = append(cmds, cmd)
 		if m.selector.HasSelectionChanged() {
-			m.updateDisplayedArticle()
+			m.updateActiveArticle()
+			m.updateActiveViewer()
 		}
 	}
 
@@ -228,6 +238,19 @@ func (m Model) activeViewerIndex() int {
 	return 0
 }
 
+func (m *Model) handleNumberInput(number int) {
+	activeViewer := m.viewers[m.activeViewerIndex()]
+	if activeViewer.ViewerType() == VT_DETAILS {
+		related := m.activeArticle.GetRelatedArticles()
+		index := number - 1
+		if 0 <= index && index < len(related) {
+			m.activeArticle = tagesschau.LoadArticle(related[index].Details)
+			m.showViewer(VT_TEXT)
+			m.updateActiveViewer()
+		}
+	}
+}
+
 func (m *Model) setFocus(onViewer bool) {
 	if onViewer {
 		m.viewers[m.activeViewerIndex()].SetFocused(true)
@@ -238,49 +261,59 @@ func (m *Model) setFocus(onViewer bool) {
 		}
 		m.selector.SetFocused(true)
 	}
-	m.updateDisplayedArticle()
+	m.updateActiveViewer()
 }
 
 func (m *Model) showViewer(vt ViewerType) {
+	isViewerFocused := m.viewers[m.activeViewerIndex()].IsFocused()
 	for _, viewer := range m.viewers {
 		if viewer.ViewerType() == vt {
 			viewer.SetActive(true)
+			viewer.SetFocused(isViewerFocused)
 		} else {
 			viewer.SetActive(false)
+			viewer.SetFocused(false)
 		}
 	}
-	m.updateDisplayedArticle()
+	m.updateActiveViewer()
 }
 
-func (m *Model) updateDisplayedArticle() {
+func (m *Model) updateActiveViewer() {
 	if !m.ready {
 		return
 	}
 
-	article := m.getSelectedArticle()
-
 	activeViewer := m.viewers[m.activeViewerIndex()]
 	if activeViewer.ViewerType() == VT_IMAGE {
-		image := article.Thumbnail
+		image := m.activeArticle.Thumbnail
 		if image == nil {
 			var err error
-			image, err = http.LoadImage(article.ImageData.ImageVariants.RectSmall)
+			image, err = http.LoadImage(m.activeArticle.ImageData.ImageVariants.RectSmall)
 			if err != nil {
 				return
 			}
-			article.Thumbnail = image
+			m.activeArticle.Thumbnail = image
 		}
 	}
-	activeViewer.SetArticle(*article)
-	activeViewer.SetHeaderData(article.Topline, article.Date)
+	header := ""
+	if m.activeArticle.IsRegionalArticle() {
+		header = m.activeArticle.Desc
+	} else {
+		header = m.activeArticle.Topline
+	}
+	activeViewer.SetArticle(*m.activeArticle)
+	activeViewer.SetHeaderData(header, m.activeArticle.Date)
 }
 
-func (m *Model) getSelectedArticle() *tagesschau.Article {
-	newsIndex, articleIndex := m.selector.GetSelectedIndex()
-	if newsIndex == 0 {
-		return &news.NationalNews[articleIndex]
+func (m *Model) updateActiveArticle() {
+	if m.selector.IsFocused() {
+		newsIndex, articleIndex := m.selector.GetSelectedIndex()
+		if newsIndex == 0 {
+			m.activeArticle = &news.NationalNews[articleIndex]
+		} else {
+			m.activeArticle = &news.RegionalNews[articleIndex]
+		}
 	}
-	return &news.RegionalNews[articleIndex]
 }
 
 func (m *Model) updateSizes(width, height int) {

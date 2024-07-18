@@ -13,6 +13,7 @@ type Reader struct {
 }
 
 func NewReader(viewer BaseViewer) *Reader {
+	viewer.modeName = "Artikel"
 	return &Reader{
 		BaseViewer: viewer,
 	}

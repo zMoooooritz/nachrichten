@@ -15,6 +15,7 @@ type ImageViewer struct {
 }
 
 func NewImageViewer(viewer BaseViewer) *ImageViewer {
+	viewer.modeName = "Bild"
 	return &ImageViewer{
 		BaseViewer: viewer,
 		image:      image.Rect(0, 0, 1, 1),

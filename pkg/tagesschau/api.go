@@ -57,6 +57,8 @@ type Article struct {
 	Content      []Content  `json:"content"`
 	Video        Video      `json:"video"`
 	ID           string     `json:"sophoraId"`
+	Details      string     `json:"details"`
+	DetailsWeb   string     `json:"detailsweb"`
 	Thumbnail    image.Image
 }
 
@@ -64,13 +66,28 @@ func (n Article) Title() string       { return n.Topline }
 func (n Article) Description() string { return n.Desc }
 func (n Article) FilterValue() string { return n.Topline }
 
+func (n Article) GetRelatedArticles() []Article {
+	articles := []Article{}
+	for _, content := range n.Content {
+		if content.Type == "related" {
+			articles = append(articles, content.Related...)
+		}
+	}
+	return articles
+}
+
+func (n Article) IsRegionalArticle() bool {
+	return len(n.RegionIDs) > 0
+}
+
 type Tag struct {
 	Tag string `json:"tag"`
 }
 
 type Content struct {
-	Value string `json:"value"`
-	Type  string `json:"type"`
+	Value   string    `json:"value"`
+	Type    string    `json:"type"`
+	Related []Article `json:"related"`
 }
 
 type ImageData struct {
@@ -123,6 +140,21 @@ func LoadNews() News {
 	news.NationalNews = deduplicateArticles(news.NationalNews)
 	news.RegionalNews = deduplicateArticles(news.RegionalNews)
 	return news
+}
+
+func LoadArticle(url string) *Article {
+	body, err := http.FetchURL(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var article Article
+	err = json.Unmarshal(body, &article)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &article
+
 }
 
 func deduplicateArticles(articles []Article) []Article {
