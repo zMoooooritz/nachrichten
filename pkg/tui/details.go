@@ -29,6 +29,7 @@ func (d Details) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 }
 
 func (d *Details) SetArticle(article tagesschau.Article) {
+	d.SetHeaderData(article)
 	d.viewport.SetContent(d.buildDetails(article))
 }
 

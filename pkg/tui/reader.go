@@ -26,6 +26,7 @@ func (r Reader) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 }
 
 func (r *Reader) SetArticle(article tagesschau.Article) {
+	r.SetHeaderData(article)
 	paragraphs := tagesschau.ContentToParagraphs(article.Content)
 	r.viewport.SetContent(r.formatParagraphs(paragraphs))
 }

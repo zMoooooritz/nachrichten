@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"image"
 	"log"
 	"time"
 
@@ -56,10 +55,9 @@ type Article struct {
 	ImageData    ImageData  `json:"teaserImage"`
 	Content      []Content  `json:"content"`
 	Video        Video      `json:"video"`
-	ID           string     `json:"sophoraId"`
+	ID           string     `json:"externalId"`
 	Details      string     `json:"details"`
 	DetailsWeb   string     `json:"detailsweb"`
-	Thumbnail    image.Image
 }
 
 func (n Article) Title() string       { return n.Topline }
@@ -181,23 +179,6 @@ func getImageURL(variants ImageVariants, imageSpec ImageSpec) string {
 		{LARGE, SQUARE}:  variants.SquareLarge,
 	}
 	return sizeMap[imageSpec]
-}
-
-func (news *News) EnrichWithThumbnails(imageSpec ImageSpec) {
-	news.NationalNews = addThumbnailToArticles(news.NationalNews, imageSpec)
-	news.RegionalNews = addThumbnailToArticles(news.RegionalNews, imageSpec)
-}
-
-func addThumbnailToArticles(articles []Article, imageSpec ImageSpec) []Article {
-	for i := range articles {
-		variants := articles[i].ImageData.ImageVariants
-		url := getImageURL(variants, imageSpec)
-		image, err := http.LoadImage(url)
-		if err == nil {
-			articles[i].Thumbnail = image
-		}
-	}
-	return articles
 }
 
 func (news *News) GetArticlesOfRegion(regionId RegionID) []Article {

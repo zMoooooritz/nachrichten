@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,6 +21,7 @@ const (
 
 type Viewer interface {
 	SetArticle(tagesschau.Article)
+	SetHeaderData(tagesschau.Article)
 	ViewerType() ViewerType
 	GotoTop()
 	GotoBottom()
@@ -32,7 +32,6 @@ type Viewer interface {
 	SetFullScreen(bool)
 	IsFullScreen() bool
 	SetDims(int, int)
-	SetHeaderData(string, time.Time)
 	Init() tea.Cmd
 	Update(tea.Msg) (Viewer, tea.Cmd)
 	View() string
@@ -62,6 +61,7 @@ func NewViewer(viewerType ViewerType, s config.Style, km viewport.KeyMap, isActi
 }
 
 func (v *BaseViewer) SetArticle(article tagesschau.Article) {
+	v.SetHeaderData(article)
 }
 
 func (v BaseViewer) GetModeText() string {
@@ -110,9 +110,13 @@ func (v *BaseViewer) SetDims(w, h int) {
 	v.viewport.YPosition = lipgloss.Height(v.headerView())
 }
 
-func (v *BaseViewer) SetHeaderData(title string, date time.Time) {
-	v.title = title
-	v.date = date.Format(germanDateFormat)
+func (v *BaseViewer) SetHeaderData(article tagesschau.Article) {
+	if article.IsRegionalArticle() {
+		v.title = article.Desc
+	} else {
+		v.title = article.Topline
+	}
+	v.date = article.Date.Format(germanDateFormat)
 }
 
 func (v BaseViewer) Init() tea.Cmd {

@@ -10,7 +10,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/config"
-	"github.com/zMoooooritz/nachrichten/pkg/http"
 	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
 	"github.com/zMoooooritz/nachrichten/pkg/util"
 )
@@ -52,6 +51,7 @@ type Model struct {
 	spinner       spinner.Model
 	config        config.Configuration
 	activeArticle *tagesschau.Article
+	imageCache    *ImageCache
 	width         int
 	height        int
 }
@@ -64,9 +64,11 @@ func InitialModel(c config.Configuration) Model {
 		helpState = HS_HIDDEN
 	}
 
+	ic := NewImageCache()
+
 	viewers := []Viewer{}
 	viewers = append(viewers, NewReader(NewViewer(VT_TEXT, style, viewportKeymap(c.Keys), true)))
-	viewers = append(viewers, NewImageViewer(NewViewer(VT_IMAGE, style, viewportKeymap(c.Keys), false)))
+	viewers = append(viewers, NewImageViewer(NewViewer(VT_IMAGE, style, viewportKeymap(c.Keys), false), ic))
 	viewers = append(viewers, NewDetails(NewViewer(VT_DETAILS, style, viewportKeymap(c.Keys), false)))
 
 	m := Model{
@@ -81,6 +83,7 @@ func InitialModel(c config.Configuration) Model {
 		spinner:       NewDotSpinner(),
 		config:        c,
 		activeArticle: nil,
+		imageCache:    ic,
 		width:         0,
 		height:        0,
 	}
@@ -107,7 +110,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tagesschau.News:
 		news = tagesschau.News(msg)
 		if m.config.Settings.PreloadThumbnails {
-			go news.EnrichWithThumbnails(imageSpec)
+			go func() {
+				for _, a := range news.NationalNews {
+					_ = m.imageCache.LoadImage(a.ID, a.ImageData.ImageVariants.RectSmall)
+				}
+				for _, a := range news.RegionalNews {
+					_ = m.imageCache.LoadImage(a.ID, a.ImageData.ImageVariants.RectSmall)
+				}
+			}()
 		}
 		m.selector.FillLists(news)
 		m.selector.ResizeLists()
@@ -148,8 +158,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.updateActiveViewer()
 			}
 		case key.Matches(msg, m.keymap.full):
-			activeViewer := m.viewers[m.activeViewerIndex()]
-
+			activeViewer := m.activeViewer()
 			activeViewer.SetFocused(true)
 			m.selector.SetFocused(false)
 			currentState := activeViewer.IsFullScreen()
@@ -229,18 +238,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Model) activeViewerIndex() int {
-	for index, viewer := range m.viewers {
+func (m Model) activeViewer() Viewer {
+	for _, viewer := range m.viewers {
 		if viewer.IsActive() {
-			return index
+			return viewer
 		}
 	}
-	return 0
+	return m.viewers[0]
 }
 
 func (m *Model) handleNumberInput(number int) {
-	activeViewer := m.viewers[m.activeViewerIndex()]
-	if activeViewer.ViewerType() == VT_DETAILS {
+	if m.activeViewer().ViewerType() == VT_DETAILS {
 		related := m.activeArticle.GetRelatedArticles()
 		index := number - 1
 		if 0 <= index && index < len(related) {
@@ -253,7 +261,7 @@ func (m *Model) handleNumberInput(number int) {
 
 func (m *Model) setFocus(onViewer bool) {
 	if onViewer {
-		m.viewers[m.activeViewerIndex()].SetFocused(true)
+		m.activeViewer().SetFocused(true)
 		m.selector.SetFocused(false)
 	} else {
 		for _, viewer := range m.viewers {
@@ -265,7 +273,7 @@ func (m *Model) setFocus(onViewer bool) {
 }
 
 func (m *Model) showViewer(vt ViewerType) {
-	isViewerFocused := m.viewers[m.activeViewerIndex()].IsFocused()
+	isViewerFocused := m.activeViewer().IsFocused()
 	for _, viewer := range m.viewers {
 		if viewer.ViewerType() == vt {
 			viewer.SetActive(true)
@@ -283,26 +291,7 @@ func (m *Model) updateActiveViewer() {
 		return
 	}
 
-	activeViewer := m.viewers[m.activeViewerIndex()]
-	if activeViewer.ViewerType() == VT_IMAGE {
-		image := m.activeArticle.Thumbnail
-		if image == nil {
-			var err error
-			image, err = http.LoadImage(m.activeArticle.ImageData.ImageVariants.RectSmall)
-			if err != nil {
-				return
-			}
-			m.activeArticle.Thumbnail = image
-		}
-	}
-	header := ""
-	if m.activeArticle.IsRegionalArticle() {
-		header = m.activeArticle.Desc
-	} else {
-		header = m.activeArticle.Topline
-	}
-	activeViewer.SetArticle(*m.activeArticle)
-	activeViewer.SetHeaderData(header, m.activeArticle.Date)
+	m.activeViewer().SetArticle(*m.activeArticle)
 }
 
 func (m *Model) updateActiveArticle() {
@@ -355,7 +344,7 @@ func (m Model) View() string {
 	}
 
 	selector := m.selector.View()
-	viewer := m.viewers[m.activeViewerIndex()].View()
+	viewer := m.activeViewer().View()
 	help := ""
 	if m.helpState == HS_NORMAL || m.helpState == HS_ALL {
 		help = "\n" + lipgloss.NewStyle().Width(m.width).AlignHorizontal(lipgloss.Center).Render(m.help.View(m.keymap))
