@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -16,14 +15,6 @@ import (
 
 const (
 	germanDateFormat string = "15:04 02.01.06"
-)
-
-type HelpState int
-
-const (
-	HS_HIDDEN HelpState = iota
-	HS_NORMAL
-	HS_ALL
 )
 
 var (
@@ -44,8 +35,7 @@ type Model struct {
 	keymap        KeyMap
 	style         config.Style
 	ready         bool
-	help          help.Model
-	helpState     HelpState
+	helper        *Helper
 	selector      Selector
 	viewers       []Viewer
 	spinner       spinner.Model
@@ -71,13 +61,14 @@ func InitialModel(c config.Configuration) Model {
 	viewers = append(viewers, NewImageViewer(NewViewer(VT_IMAGE, style, viewportKeymap(c.Keys), false), ic))
 	viewers = append(viewers, NewDetails(NewViewer(VT_DETAILS, style, viewportKeymap(c.Keys), false)))
 
+	keymap := GetKeyMap(c.Keys)
+
 	m := Model{
 		opener:        util.NewOpener(c.Applications),
-		keymap:        GetKeyMap(c.Keys),
+		keymap:        keymap,
 		style:         style,
 		ready:         false,
-		help:          NewHelper(style),
-		helpState:     helpState,
+		helper:        NewHelper(style, keymap, helpState),
 		selector:      NewSelector(style, listKeymap(c.Keys)),
 		viewers:       viewers,
 		spinner:       NewDotSpinner(),
@@ -133,13 +124,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.quit):
 			return m, tea.Quit
 		case key.Matches(msg, m.keymap.help):
-			m.helpState = (m.helpState + 1) % 3
-			if m.helpState == HS_NORMAL {
-				m.help.ShowAll = false
-			}
-			if m.helpState == HS_ALL {
-				m.help.ShowAll = true
-			}
+			m.helper.NextState()
 			m.updateSizes(m.width, m.height)
 		case key.Matches(msg, m.keymap.right):
 			m.setFocus(true)
@@ -148,14 +133,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.next):
 			if m.selector.IsFocused() {
 				m.selector.NextList()
-				m.updateActiveArticle()
-				m.updateActiveViewer()
 			}
 		case key.Matches(msg, m.keymap.prev):
 			if m.selector.IsFocused() {
 				m.selector.PrevList()
-				m.updateActiveArticle()
-				m.updateActiveViewer()
 			}
 		case key.Matches(msg, m.keymap.full):
 			activeViewer := m.activeViewer()
@@ -309,32 +290,25 @@ func (m *Model) updateSizes(width, height int) {
 	m.width = width
 	m.height = height
 
-	m.selector.SetDims(m.width/3, m.height-m.helperHeight()-5)
+	m.selector.SetDims(m.width/3, m.height-m.helper.Height()-5)
 	m.selector.ResizeLists()
 
 	isViewerFullscreen := false
 	for _, viewer := range m.viewers {
 		if viewer.IsFullScreen() {
 			m.selector.SetVisible(false)
-			viewer.SetDims(m.width, m.height-m.helperHeight())
+			viewer.SetDims(m.width, m.height-m.helper.Height())
 			isViewerFullscreen = true
 		}
 	}
 	if !isViewerFullscreen {
 		m.selector.SetVisible(true)
 		for _, viewer := range m.viewers {
-			viewer.SetDims(m.width-m.width/3-6, m.height-m.helperHeight())
+			viewer.SetDims(m.width-m.width/3-6, m.height-m.helper.Height())
 		}
 	}
 
-	m.help.Width = m.width
-}
-
-func (m Model) helperHeight() int {
-	if m.helpState == HS_NORMAL || m.helpState == HS_ALL {
-		return 2
-	}
-	return 0
+	m.helper.SetWidth(m.width)
 }
 
 func (m Model) View() string {
@@ -345,10 +319,7 @@ func (m Model) View() string {
 
 	selector := m.selector.View()
 	viewer := m.activeViewer().View()
-	help := ""
-	if m.helpState == HS_NORMAL || m.helpState == HS_ALL {
-		help = "\n" + lipgloss.NewStyle().Width(m.width).AlignHorizontal(lipgloss.Center).Render(m.help.View(m.keymap))
-	}
+	help := m.helper.View()
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, selector, viewer) + help
 }
