@@ -181,10 +181,10 @@ func (m Model) activeViewer() Viewer {
 
 func (m *Model) loadThumbnails() {
 	for _, a := range news.NationalNews {
-		_ = m.imageCache.LoadImage(a.ID, a.ImageData.ImageVariants.RectSmall)
+		_ = m.imageCache.LoadImage(a.ID, tagesschau.GetImageURL(a.ImageData.ImageVariants, imageSpec))
 	}
 	for _, a := range news.RegionalNews {
-		_ = m.imageCache.LoadImage(a.ID, a.ImageData.ImageVariants.RectSmall)
+		_ = m.imageCache.LoadImage(a.ID, tagesschau.GetImageURL(a.ImageData.ImageVariants, imageSpec))
 	}
 }
 

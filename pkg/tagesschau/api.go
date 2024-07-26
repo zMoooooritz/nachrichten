@@ -167,7 +167,7 @@ func deduplicateArticles(articles []Article) []Article {
 	return deduped
 }
 
-func getImageURL(variants ImageVariants, imageSpec ImageSpec) string {
+func GetImageURL(variants ImageVariants, imageSpec ImageSpec) string {
 	sizeMap := map[ImageSpec]string{
 		{SMALL, RECT}:    variants.RectSmall,
 		{MEDIUM, RECT}:   variants.RectMedium,
