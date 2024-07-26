@@ -9,3 +9,5 @@ func NewDotSpinner() spinner.Model {
 	s.Spinner = spinner.Dot
 	return s
 }
+
+type LoadingNewsFailed struct{}

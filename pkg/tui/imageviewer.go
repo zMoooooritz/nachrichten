@@ -25,9 +25,17 @@ func NewImageViewer(viewer BaseViewer, ic *ImageCache) *ImageViewer {
 }
 
 func (i ImageViewer) Update(msg tea.Msg) (Viewer, tea.Cmd) {
-	var cmd tea.Cmd
-	i.viewport, cmd = i.viewport.Update(msg)
-	return &ImageViewer{BaseViewer: i.BaseViewer, image: i.image, cache: i.cache}, cmd
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+	if i.isFocused {
+		i.viewport, cmd = i.viewport.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+	bv, cmd := i.BaseViewer.Update(msg)
+	cmds = append(cmds, cmd)
+	return &ImageViewer{BaseViewer: bv, image: i.image, cache: i.cache}, tea.Batch(cmds...)
 }
 
 func (i *ImageViewer) SetArticle(article tagesschau.Article) {

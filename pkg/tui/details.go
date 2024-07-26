@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss/list"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -23,9 +23,17 @@ func NewDetails(viewer BaseViewer) *Details {
 }
 
 func (d Details) Update(msg tea.Msg) (Viewer, tea.Cmd) {
-	var cmd tea.Cmd
-	d.viewport, cmd = d.viewport.Update(msg)
-	return &Details{BaseViewer: d.BaseViewer}, cmd
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+	if d.isFocused {
+		d.viewport, cmd = d.viewport.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+	bv, cmd := d.BaseViewer.Update(msg)
+	cmds = append(cmds, cmd)
+	return &Details{BaseViewer: bv}, tea.Batch(cmds...)
 }
 
 func (d *Details) SetArticle(article tagesschau.Article) {
@@ -45,58 +53,74 @@ func (d Details) buildDetails(article tagesschau.Article) string {
 }
 
 func (d Details) buildRegionalArticleDetails(article tagesschau.Article) string {
-	regionsStr := []string{}
+	regionStr := ""
+	regionsStr := ""
 	for _, regionID := range article.RegionIDs {
-		regionsStr = append(regionsStr, string(tagesschau.GERMAN_NAMES[regionID]))
+		name, err := tagesschau.RegionIdToName(int(regionID))
+		if err == nil {
+			if regionStr == "" {
+				regionStr = name
+			}
+			regionsStr += "  - " + name + "\n"
+		}
 	}
 
-	l := list.New()
-	l.Item(fmt.Sprintf("Titel: %s", article.Desc))
-	if len(regionsStr) == 1 {
-		l.Item(fmt.Sprintf("Region: %s", regionsStr[0]))
-	} else if len(regionsStr) > 0 {
-		l.Item("Regionen:")
-		l.Item(list.New(regionsStr))
+	strBuf := d.renderEntry("Titel", article.Desc) + "\n"
+
+	if len(article.RegionIDs) == 1 {
+		strBuf += d.renderEntry("Region", regionStr) + "\n"
+	} else {
+		strBuf += d.style.ActiveHighlightStyle.Render("Regionen:") + "\n"
+		strBuf += regionsStr
 	}
 	caser := cases.Title(language.English)
-	l.Item(fmt.Sprintf("Typ: %s", caser.String(article.Type)))
-	l.Item(breakingText(article.Breaking))
-	return l.String()
+	strBuf += d.renderEntry("Typ", caser.String(article.Type)) + "\n"
+	strBuf += d.breakingText(article.Breaking) + "\n"
+
+	return lipgloss.NewStyle().PaddingLeft(2).Render(strBuf)
 }
 
 func (d Details) buildNationalArticleDetails(article tagesschau.Article) string {
-	tagStr := []string{}
+	tagStr := ""
 	for _, tag := range article.Tags {
-		tagStr = append(tagStr, tag.Tag)
+		tagStr += "  - " + tag.Tag + "\n"
 	}
-	relatedStr := []string{}
+	relatedStr := ""
 	for index, related := range article.GetRelatedArticles() {
-		relatedStr = append(relatedStr, fmt.Sprintf("[%d]\n   %s\n    %s", index+1, strings.TrimSpace(related.Topline), strings.TrimSpace(related.Desc)))
+		ident := d.style.HighlightStyle.Render(fmt.Sprintf("  [%d] ", index+1))
+		repr := strings.TrimSpace(related.Topline)
+		if strings.TrimSpace(related.Desc) != "" {
+			repr += " - " + strings.TrimSpace(related.Desc)
+		}
+		relatedStr += ident + d.style.InactiveStyle.Render(repr) + "\n"
 	}
-	l := list.New()
-	l.Item(fmt.Sprintf("Titel: %s", article.Topline))
-	l.Item(fmt.Sprintf("Untertitel: %s", article.Desc))
+
+	strBuf := d.renderEntry("Titel", article.Topline) + "\n"
+	strBuf += d.renderEntry("Untertitel", article.Desc) + "\n"
 	caser := cases.Title(language.English)
-	if article.IsRegionalArticle() {
-		l.Item(fmt.Sprintf("Region: %s", tagesschau.GERMAN_NAMES[article.RegionID]))
-	} else {
-		l.Item(fmt.Sprintf("Ressort: %s", caser.String(article.Ressort)))
+	if article.Ressort != "" {
+		strBuf += d.renderEntry("Ressort", caser.String(article.Ressort)) + "\n"
 	}
-	l.Item(fmt.Sprintf("Typ: %s", caser.String(article.Type)))
-	l.Item(breakingText(article.Breaking))
-	l.Item("Tags:")
-	l.Item(list.New(tagStr))
+	strBuf += d.renderEntry("Typ", caser.String(article.Type)) + "\n"
+	strBuf += d.breakingText(article.Breaking) + "\n"
+	strBuf += d.style.ActiveHighlightStyle.Render("Tags:") + "\n"
+	strBuf += tagStr
 	if len(relatedStr) > 0 {
-		l.Item("Verwandt:")
-		l.Item(list.New(relatedStr))
+		strBuf += d.style.ActiveHighlightStyle.Render("Verwandt:") + "\n"
+		strBuf += relatedStr
 	}
-	return d.style.InactiveStyle.Render(l.String())
+
+	return lipgloss.NewStyle().PaddingLeft(2).Render(strBuf)
 }
 
-func breakingText(breaking bool) string {
+func (d Details) renderEntry(header, content string) string {
+	return d.style.ActiveHighlightStyle.Render(header+": ") + d.style.InactiveStyle.Render(content)
+}
+
+func (d Details) breakingText(breaking bool) string {
 	if breaking {
-		return "Eilmeldung: Ja"
+		return d.renderEntry("Eilmeldung", "Ja")
 	} else {
-		return "Eilmeldung: Nein"
+		return d.renderEntry("Eilmeldung", "Nein")
 	}
 }

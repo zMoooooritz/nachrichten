@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -40,6 +41,7 @@ type Viewer interface {
 type BaseViewer struct {
 	viewerType   ViewerType
 	style        config.Style
+	keymap       KeyMap
 	isActive     bool
 	isFocused    bool
 	isFullScreen bool
@@ -49,12 +51,13 @@ type BaseViewer struct {
 	viewport     viewport.Model
 }
 
-func NewViewer(viewerType ViewerType, s config.Style, km viewport.KeyMap, isActive bool) BaseViewer {
+func NewViewer(viewerType ViewerType, s config.Style, keys config.Keys, isActive bool) BaseViewer {
 	vp := viewport.New(0, 0)
-	vp.KeyMap = km
+	vp.KeyMap = ViewportKeymap(keys)
 	return BaseViewer{
 		viewerType: viewerType,
 		style:      s,
+		keymap:     GetKeyMap(keys),
 		isActive:   isActive,
 		viewport:   vp,
 	}
@@ -124,6 +127,32 @@ func (v BaseViewer) Init() tea.Cmd {
 }
 
 func (v BaseViewer) Update(msg tea.Msg) (BaseViewer, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, v.keymap.right):
+			if v.isActive {
+				v.isFocused = true
+			}
+		case key.Matches(msg, v.keymap.left):
+			if v.isActive {
+				v.isFocused = false
+			}
+		case key.Matches(msg, v.keymap.start):
+			if v.isFocused {
+				v.GotoTop()
+			}
+		case key.Matches(msg, v.keymap.end):
+			if v.isFocused {
+				v.GotoBottom()
+			}
+		case key.Matches(msg, v.keymap.full):
+			if v.isActive {
+				v.isFullScreen = !v.isFullScreen
+			}
+		}
+	}
+
 	return v, nil
 }
 

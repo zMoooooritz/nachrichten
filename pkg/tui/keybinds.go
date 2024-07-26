@@ -103,7 +103,7 @@ func keybindsToHelpText(binds []string) string {
 	return keybinds[0]
 }
 
-func viewportKeymap(k config.Keys) viewport.KeyMap {
+func ViewportKeymap(k config.Keys) viewport.KeyMap {
 	km := viewport.DefaultKeyMap()
 	km.Up = toBinding(k.Up)
 	km.Down = toBinding(k.Down)
@@ -114,7 +114,7 @@ func viewportKeymap(k config.Keys) viewport.KeyMap {
 	return km
 }
 
-func listKeymap(k config.Keys) list.KeyMap {
+func ListKeymap(k config.Keys) list.KeyMap {
 	km := list.DefaultKeyMap()
 	km.CursorUp = toBinding(k.Up)
 	km.CursorDown = toBinding(k.Down)

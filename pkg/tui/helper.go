@@ -2,6 +2,8 @@ package tui
 
 import (
 	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/config"
 )
@@ -20,10 +22,10 @@ type Helper struct {
 	state  HelpState
 }
 
-func NewHelper(s config.Style, keyMap KeyMap, state HelpState) *Helper {
+func NewHelper(s config.Style, keys config.Keys, state HelpState) *Helper {
 	h := Helper{
 		model:  help.New(),
-		keymap: keyMap,
+		keymap: GetKeyMap(keys),
 		state:  state,
 	}
 	h.model.FullSeparator = " • "
@@ -33,14 +35,25 @@ func NewHelper(s config.Style, keyMap KeyMap, state HelpState) *Helper {
 	return &h
 }
 
-func (h *Helper) View() string {
+func (h Helper) View() string {
 	if h.IsVisible() {
 		return "\n" + lipgloss.NewStyle().Width(h.model.Width).AlignHorizontal(lipgloss.Center).Render(h.model.View(h.keymap))
 	}
 	return ""
 }
 
-func (h *Helper) NextState() {
+func (h *Helper) Update(msg tea.Msg) (*Helper, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, h.keymap.help):
+			h.nextState()
+		}
+	}
+	return h, nil
+}
+
+func (h *Helper) nextState() {
 	h.state = (h.state + 1) % 3
 	if h.state == HS_NORMAL {
 		h.model.ShowAll = false

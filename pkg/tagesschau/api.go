@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -124,35 +123,34 @@ func RegionIdToName(id int) (string, error) {
 	return "", errors.New("invalid regionId")
 }
 
-func LoadNews() News {
+func LoadNews() (News, error) {
+	var news News
 	body, err := http.FetchURL(apiUrl)
 	if err != nil {
-		log.Fatal(err)
+		return news, err
 	}
 
-	var news News
 	err = json.Unmarshal(body, &news)
 	if err != nil {
-		log.Fatal(err)
+		return news, err
 	}
 	news.NationalNews = deduplicateArticles(news.NationalNews)
 	news.RegionalNews = deduplicateArticles(news.RegionalNews)
-	return news
+	return news, nil
 }
 
-func LoadArticle(url string) *Article {
+func LoadArticle(url string) (*Article, error) {
 	body, err := http.FetchURL(url)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var article Article
 	err = json.Unmarshal(body, &article)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return &article
-
+	return &article, nil
 }
 
 func deduplicateArticles(articles []Article) []Article {

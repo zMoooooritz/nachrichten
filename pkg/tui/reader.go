@@ -20,9 +20,17 @@ func NewReader(viewer BaseViewer) *Reader {
 }
 
 func (r Reader) Update(msg tea.Msg) (Viewer, tea.Cmd) {
-	var cmd tea.Cmd
-	r.viewport, cmd = r.viewport.Update(msg)
-	return &Reader{BaseViewer: r.BaseViewer}, cmd
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+	if r.IsFocused() {
+		r.viewport, cmd = r.viewport.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+	bv, cmd := r.BaseViewer.Update(msg)
+	cmds = append(cmds, cmd)
+	return &Reader{BaseViewer: bv}, tea.Batch(cmds...)
 }
 
 func (r *Reader) SetArticle(article tagesschau.Article) {

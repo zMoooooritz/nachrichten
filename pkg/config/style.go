@@ -12,9 +12,12 @@ const (
 )
 
 type Style struct {
-	TextHighlightStyle lipgloss.Style
+	TextHighlightStyle  lipgloss.Style
+	ScreenCenteredStyle func(width, height int) lipgloss.Style
 
 	ActiveStyle            lipgloss.Style
+	ActiveHighlightStyle   lipgloss.Style
+	HighlightStyle         lipgloss.Style
 	TitleActiveStyle       lipgloss.Style
 	ListHeaderActiveStyle  lipgloss.Style
 	ListActiveStyle        lipgloss.Style
@@ -53,53 +56,59 @@ func NewsStyle(t Theme) (s Style) {
 	highlightShadedColor := lipgloss.Color(t.HighlightShadedColor)
 	warningColor := lipgloss.Color(t.WarningColor)
 	warningShadedColor := lipgloss.Color(t.WarningShadedColor)
+	markerColor := lipgloss.Color(t.ReaderHighlightColor)
 
 	listBaseStyle := lipgloss.NewStyle().Padding(0, 1, 1, 1).Margin(0, 1, 0, 1)
 
 	s.TextHighlightStyle = lipgloss.NewStyle().Foreground(highlightColor).BorderForeground(primaryColor)
+	s.ScreenCenteredStyle = func(width, height int) lipgloss.Style {
+		return lipgloss.NewStyle().Width(width).Align(lipgloss.Center).Height(height).AlignVertical(lipgloss.Center)
+	}
 
 	s.ActiveStyle = lipgloss.NewStyle().Foreground(highlightColor).BorderForeground(highlightColor)
+	s.ActiveHighlightStyle = lipgloss.NewStyle().Foreground(highlightShadedColor).BorderForeground(highlightShadedColor).Bold(true)
+	s.HighlightStyle = lipgloss.NewStyle().Foreground(markerColor).BorderForeground(markerColor).Bold(true)
 	s.TitleActiveStyle = lipgloss.NewStyle().Background(highlightColor).Foreground(primaryColor)
-	s.ListActiveStyle = listBaseStyle.Copy().BorderForeground(highlightColor).BorderStyle(lipgloss.DoubleBorder())
-	s.ListHeaderActiveStyle = s.ActiveStyle.Copy().Padding(0, 1).Border(lipgloss.DoubleBorder(), false, false, true, false)
+	s.ListActiveStyle = listBaseStyle.BorderForeground(highlightColor).BorderStyle(lipgloss.DoubleBorder())
+	s.ListHeaderActiveStyle = s.ActiveStyle.Padding(0, 1).Border(lipgloss.DoubleBorder(), false, false, true, false)
 	s.ReaderTitleActiveStyle = func() lipgloss.Style {
 		b := lipgloss.DoubleBorder()
 		b.Right = "╠"
-		return s.ActiveStyle.Copy().BorderStyle(b).Padding(0, 1)
+		return s.ActiveStyle.BorderStyle(b).Padding(0, 1)
 	}()
 	s.ReaderInfoActiveStyle = func() lipgloss.Style {
 		b := lipgloss.DoubleBorder()
 		b.Left = "╣"
-		return s.ReaderTitleActiveStyle.Copy().BorderStyle(b)
+		return s.ReaderTitleActiveStyle.BorderStyle(b)
 	}()
 
 	s.InactiveStyle = lipgloss.NewStyle().Foreground(primaryColor).BorderForeground(primaryColor)
 	s.TitleInactiveStyle = lipgloss.NewStyle().Foreground(primaryColor)
-	s.ListInactiveStyle = listBaseStyle.Copy().BorderForeground(primaryColor).BorderStyle(lipgloss.RoundedBorder())
-	s.ListHeaderInactiveStyle = s.InactiveStyle.Copy().Padding(0, 1).Border(lipgloss.RoundedBorder(), false, false, true, false)
+	s.ListInactiveStyle = listBaseStyle.BorderForeground(primaryColor).BorderStyle(lipgloss.RoundedBorder())
+	s.ListHeaderInactiveStyle = s.InactiveStyle.Padding(0, 1).Border(lipgloss.RoundedBorder(), false, false, true, false)
 	s.ReaderTitleInactiveStyle = func() lipgloss.Style {
 		b := lipgloss.RoundedBorder()
 		b.Right = "├"
-		return s.InactiveStyle.Copy().BorderStyle(b).Padding(0, 1)
+		return s.InactiveStyle.BorderStyle(b).Padding(0, 1)
 	}()
 	s.ReaderInfoInactiveStyle = func() lipgloss.Style {
 		b := lipgloss.RoundedBorder()
 		b.Left = "┤"
-		return s.ReaderTitleInactiveStyle.Copy().BorderStyle(b)
+		return s.ReaderTitleInactiveStyle.BorderStyle(b)
 	}()
 
 	s.ItemNormalTitle = lipgloss.NewStyle().Foreground(primaryColor).Padding(0, 0, 0, 2)
 
-	s.ItemNormalDesc = s.ItemNormalTitle.Copy().Foreground(shadedColor)
+	s.ItemNormalDesc = s.ItemNormalTitle.Foreground(shadedColor)
 
 	s.ItemSelectedTitle = lipgloss.NewStyle().Border(lipgloss.NormalBorder(), false, false, false, true).
 		BorderForeground(highlightColor).Foreground(highlightShadedColor).Padding(0, 0, 0, 1)
 
-	s.ItemSelectedDesc = s.ItemSelectedTitle.Copy().Foreground(highlightColor)
+	s.ItemSelectedDesc = s.ItemSelectedTitle.Foreground(highlightColor)
 
 	s.ItemBreakingTitle = lipgloss.NewStyle().Foreground(warningColor).Padding(0, 0, 0, 2)
 
-	s.ItemBreakingDesc = s.ItemBreakingTitle.Copy().Foreground(warningShadedColor)
+	s.ItemBreakingDesc = s.ItemBreakingTitle.Foreground(warningShadedColor)
 
 	s.ActiveTabBorder = lipgloss.Border{
 		Top:         "─",

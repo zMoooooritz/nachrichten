@@ -18,14 +18,6 @@ const (
 )
 
 var (
-	screenCentered = func(w, h int) lipgloss.Style {
-		return lipgloss.NewStyle().
-			Width(w).
-			Align(lipgloss.Center).
-			Height(h).
-			AlignVertical(lipgloss.Center)
-	}
-
 	news      tagesschau.News
 	imageSpec = tagesschau.ImageSpec{Size: tagesschau.SMALL, Ratio: tagesschau.RECT}
 )
@@ -35,8 +27,9 @@ type Model struct {
 	keymap        KeyMap
 	style         config.Style
 	ready         bool
+	loadingFailed bool
 	helper        *Helper
-	selector      Selector
+	selector      *Selector
 	viewers       []Viewer
 	spinner       spinner.Model
 	config        config.Configuration
@@ -49,46 +42,43 @@ type Model struct {
 func InitialModel(c config.Configuration) Model {
 	style := config.NewsStyle(c.Theme)
 
-	helpState := HS_NORMAL
+	initialHelpState := HS_NORMAL
 	if c.Settings.HideHelpOnStartup {
-		helpState = HS_HIDDEN
+		initialHelpState = HS_HIDDEN
 	}
 
 	ic := NewImageCache()
 
-	viewers := []Viewer{}
-	viewers = append(viewers, NewReader(NewViewer(VT_TEXT, style, viewportKeymap(c.Keys), true)))
-	viewers = append(viewers, NewImageViewer(NewViewer(VT_IMAGE, style, viewportKeymap(c.Keys), false), ic))
-	viewers = append(viewers, NewDetails(NewViewer(VT_DETAILS, style, viewportKeymap(c.Keys), false)))
-
-	keymap := GetKeyMap(c.Keys)
-
-	m := Model{
-		opener:        util.NewOpener(c.Applications),
-		keymap:        keymap,
-		style:         style,
-		ready:         false,
-		helper:        NewHelper(style, keymap, helpState),
-		selector:      NewSelector(style, listKeymap(c.Keys)),
-		viewers:       viewers,
-		spinner:       NewDotSpinner(),
-		config:        c,
-		activeArticle: nil,
-		imageCache:    ic,
-		width:         0,
-		height:        0,
+	viewers := []Viewer{
+		NewReader(NewViewer(VT_TEXT, style, c.Keys, true)),
+		NewImageViewer(NewViewer(VT_IMAGE, style, c.Keys, false), ic),
+		NewDetails(NewViewer(VT_DETAILS, style, c.Keys, false)),
 	}
-	return m
-}
 
-func GetNews() tea.Cmd {
-	return func() tea.Msg {
-		return tagesschau.LoadNews()
+	return Model{
+		opener:     util.NewOpener(c.Applications),
+		keymap:     GetKeyMap(c.Keys),
+		style:      style,
+		ready:      false,
+		helper:     NewHelper(style, c.Keys, initialHelpState),
+		selector:   NewSelector(style, c.Keys),
+		viewers:    viewers,
+		spinner:    NewDotSpinner(),
+		config:     c,
+		imageCache: ic,
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(GetNews(), m.spinner.Tick)
+	return tea.Batch(loadNews, m.spinner.Tick)
+}
+
+func loadNews() tea.Msg {
+	news, err := tagesschau.LoadNews()
+	if err == nil {
+		return news
+	}
+	return LoadingNewsFailed{}
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -98,73 +88,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
+	case LoadingNewsFailed:
+		m.loadingFailed = true
 	case tagesschau.News:
 		news = tagesschau.News(msg)
 		if m.config.Settings.PreloadThumbnails {
-			go func() {
-				for _, a := range news.NationalNews {
-					_ = m.imageCache.LoadImage(a.ID, a.ImageData.ImageVariants.RectSmall)
-				}
-				for _, a := range news.RegionalNews {
-					_ = m.imageCache.LoadImage(a.ID, a.ImageData.ImageVariants.RectSmall)
-				}
-			}()
+			go m.loadThumbnails()
 		}
-		m.selector.FillLists(news)
-		m.selector.ResizeLists()
 		m.ready = true
 		m.activeArticle = &news.NationalNews[0]
 		m.updateActiveViewer()
 	case tea.KeyMsg:
+		if key.Matches(msg, m.keymap.quit) {
+			return m, tea.Quit
+		}
+
 		if !m.ready {
-			return m, tea.Batch(cmds...)
+			return m, nil
 		}
 
 		switch {
-		case key.Matches(msg, m.keymap.quit):
-			return m, tea.Quit
-		case key.Matches(msg, m.keymap.help):
-			m.helper.NextState()
-			m.updateSizes(m.width, m.height)
-		case key.Matches(msg, m.keymap.right):
-			m.setFocus(true)
-		case key.Matches(msg, m.keymap.left):
-			m.setFocus(false)
-		case key.Matches(msg, m.keymap.next):
-			if m.selector.IsFocused() {
-				m.selector.NextList()
-			}
-		case key.Matches(msg, m.keymap.prev):
-			if m.selector.IsFocused() {
-				m.selector.PrevList()
-			}
-		case key.Matches(msg, m.keymap.full):
-			activeViewer := m.activeViewer()
-			activeViewer.SetFocused(true)
-			m.selector.SetFocused(false)
-			currentState := activeViewer.IsFullScreen()
-			for _, viewer := range m.viewers {
-				if activeViewer.ViewerType() == activeViewer.ViewerType() {
-					viewer.SetFullScreen(!currentState)
-				} else {
-					viewer.SetFullScreen(currentState)
-				}
-			}
-
-			m.updateSizes(m.width, m.height)
-			m.updateActiveViewer()
-		case key.Matches(msg, m.keymap.start):
-			for _, viewer := range m.viewers {
-				if viewer.IsFocused() {
-					viewer.GotoTop()
-				}
-			}
-		case key.Matches(msg, m.keymap.end):
-			for _, viewer := range m.viewers {
-				if viewer.IsFocused() {
-					viewer.GotoBottom()
-				}
-			}
 		case key.Matches(msg, m.keymap.article):
 			m.showViewer(VT_TEXT)
 		case key.Matches(msg, m.keymap.image):
@@ -198,20 +141,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	}
 
-	updatedViewer := false
-	for i, viewer := range m.viewers {
-		if viewer.IsFocused() || viewer.IsFullScreen() {
-			updateViewer, cmd := viewer.Update(msg)
-			m.viewers[i] = updateViewer
-			cmds = append(cmds, cmd)
-			updatedViewer = true
-		}
+	m.helper, cmd = m.helper.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.selector, cmd = m.selector.Update(msg)
+	cmds = append(cmds, cmd)
+	if m.selector.HasSelectionChanged() {
+		m.updateActiveArticle()
+		m.updateActiveViewer()
 	}
-	if !updatedViewer {
-		m.selector, cmd = m.selector.Update(msg)
+
+	for i, viewer := range m.viewers {
+		updateViewer, cmd := viewer.Update(msg)
+		m.viewers[i] = updateViewer
 		cmds = append(cmds, cmd)
-		if m.selector.HasSelectionChanged() {
-			m.updateActiveArticle()
+	}
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.keymap.help):
+			m.updateSizes(m.width, m.height)
+		case key.Matches(msg, m.keymap.full):
+			m.updateSizes(m.width, m.height)
 			m.updateActiveViewer()
 		}
 	}
@@ -228,42 +179,50 @@ func (m Model) activeViewer() Viewer {
 	return m.viewers[0]
 }
 
+func (m *Model) loadThumbnails() {
+	for _, a := range news.NationalNews {
+		_ = m.imageCache.LoadImage(a.ID, a.ImageData.ImageVariants.RectSmall)
+	}
+	for _, a := range news.RegionalNews {
+		_ = m.imageCache.LoadImage(a.ID, a.ImageData.ImageVariants.RectSmall)
+	}
+}
+
 func (m *Model) handleNumberInput(number int) {
 	if m.activeViewer().ViewerType() == VT_DETAILS {
 		related := m.activeArticle.GetRelatedArticles()
 		index := number - 1
 		if 0 <= index && index < len(related) {
-			m.activeArticle = tagesschau.LoadArticle(related[index].Details)
-			m.showViewer(VT_TEXT)
-			m.updateActiveViewer()
+			article, err := tagesschau.LoadArticle(related[index].Details)
+			if err == nil {
+				m.activeArticle = article
+				m.showViewer(VT_TEXT)
+				m.updateActiveViewer()
+			}
 		}
 	}
-}
-
-func (m *Model) setFocus(onViewer bool) {
-	if onViewer {
-		m.activeViewer().SetFocused(true)
-		m.selector.SetFocused(false)
-	} else {
-		for _, viewer := range m.viewers {
-			viewer.SetFocused(false)
-		}
-		m.selector.SetFocused(true)
-	}
-	m.updateActiveViewer()
 }
 
 func (m *Model) showViewer(vt ViewerType) {
-	isViewerFocused := m.activeViewer().IsFocused()
+	currViewer := m.activeViewer()
+	nextViewer := m.activeViewer()
 	for _, viewer := range m.viewers {
 		if viewer.ViewerType() == vt {
-			viewer.SetActive(true)
-			viewer.SetFocused(isViewerFocused)
-		} else {
-			viewer.SetActive(false)
-			viewer.SetFocused(false)
+			nextViewer = viewer
 		}
 	}
+	if currViewer.ViewerType() == nextViewer.ViewerType() {
+		return
+	}
+
+	nextViewer.SetActive(true)
+	nextViewer.SetFocused(currViewer.IsFocused())
+	nextViewer.SetFullScreen(currViewer.IsFullScreen())
+
+	currViewer.SetActive(false)
+	currViewer.SetFocused(false)
+	currViewer.SetFullScreen(false)
+
 	m.updateActiveViewer()
 }
 
@@ -276,13 +235,11 @@ func (m *Model) updateActiveViewer() {
 }
 
 func (m *Model) updateActiveArticle() {
-	if m.selector.IsFocused() {
-		newsIndex, articleIndex := m.selector.GetSelectedIndex()
-		if newsIndex == 0 {
-			m.activeArticle = &news.NationalNews[articleIndex]
-		} else {
-			m.activeArticle = &news.RegionalNews[articleIndex]
-		}
+	newsIndex, articleIndex := m.selector.GetSelectedIndex()
+	if newsIndex == 0 {
+		m.activeArticle = &news.NationalNews[articleIndex]
+	} else {
+		m.activeArticle = &news.RegionalNews[articleIndex]
 	}
 }
 
@@ -291,19 +248,17 @@ func (m *Model) updateSizes(width, height int) {
 	m.height = height
 
 	m.selector.SetDims(m.width/3, m.height-m.helper.Height()-5)
-	m.selector.ResizeLists()
 
 	isViewerFullscreen := false
 	for _, viewer := range m.viewers {
 		if viewer.IsFullScreen() {
-			m.selector.SetVisible(false)
-			viewer.SetDims(m.width, m.height-m.helper.Height())
 			isViewerFullscreen = true
 		}
 	}
-	if !isViewerFullscreen {
-		m.selector.SetVisible(true)
-		for _, viewer := range m.viewers {
+	for _, viewer := range m.viewers {
+		if isViewerFullscreen {
+			viewer.SetDims(m.width, m.height-m.helper.Height())
+		} else {
 			viewer.SetDims(m.width-m.width/3-6, m.height-m.helper.Height())
 		}
 	}
@@ -312,9 +267,13 @@ func (m *Model) updateSizes(width, height int) {
 }
 
 func (m Model) View() string {
+	if m.loadingFailed {
+		content := "Laden der Nachrichten fehlgeschlagen... press q to quit"
+		return m.style.ScreenCenteredStyle(m.width, m.height).Render(content)
+	}
 	if !m.ready {
 		content := fmt.Sprintf("%s Lade Nachrichten... press q to quit", m.spinner.View())
-		return screenCentered(m.width, m.height).Render(content)
+		return m.style.ScreenCenteredStyle(m.width, m.height).Render(content)
 	}
 
 	selector := m.selector.View()
