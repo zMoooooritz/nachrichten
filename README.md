@@ -43,6 +43,14 @@ Usage of nachrichten:
     	Display version
 ```
 
+### Viewers
+
+The application offers three different viewers:
+
+1. **Article Viewer**: Displays the full text of the respective article.
+2. **Image Viewer**: Shows the thumbnail image associated with the article, rendered as ASCII art.
+3. **Details Viewer**: Provides detailed information about the article and lists related articles. You can open related articles by pressing the corresponding number key.
+
 ## ⇁ Configuration
 The tool does allow for user customization
 1. **Theme** - Adapt the used colors in order to change the look and feel of the application
