@@ -118,15 +118,15 @@ func (s Selector) Init() tea.Cmd {
 func (s *Selector) Update(msg tea.Msg) (*Selector, tea.Cmd) {
 	var cmd tea.Cmd
 
-	if s.isFocused && s.isVisible {
-		s.lists[s.activeListIndex], cmd = s.lists[s.activeListIndex].Update(msg)
-	}
-
 	switch msg := msg.(type) {
 	case tagesschau.News:
 		news = tagesschau.News(msg)
 		s.fillLists(news)
 	case tea.KeyMsg:
+		if s.isFocused && s.isVisible {
+			s.lists[s.activeListIndex], cmd = s.lists[s.activeListIndex].Update(msg)
+		}
+
 		switch {
 		case key.Matches(msg, s.keymap.next):
 			if s.isFocused {

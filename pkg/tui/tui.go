@@ -132,12 +132,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.updateSizes(msg.Width, msg.Height)
 		m.updateActiveViewer()
-	default:
-		m.spinner, cmd = m.spinner.Update(msg)
-		cmds = append(cmds, cmd)
 	}
 
 	if !m.ready {
+		m.spinner, cmd = m.spinner.Update(msg)
+		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
 	}
 
@@ -156,6 +155,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewers[i] = updateViewer
 		cmds = append(cmds, cmd)
 	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {

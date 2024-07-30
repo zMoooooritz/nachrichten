@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strings"
+
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -45,17 +47,25 @@ func (r Reader) formatParagraphs(paragraphs []string) string {
 		EscapeMode: "disabled",
 	}
 	converter := md.NewConverter("", true, &options)
-	renderer, _ := glamour.NewTermRenderer(
-		glamour.WithAutoStyle(),
+	renderer, err := glamour.NewTermRenderer(
 		glamour.WithWordWrap(width),
 		glamour.WithStyles(r.style.ReaderStyle),
 	)
+	if err != nil {
+		util.Logger.Fatalln(err)
+		return util.PadText("Unable to parse and print article", width)
+	}
 
-	result := ""
-	for _, p := range paragraphs {
-		text, _ := converter.ConvertString(p)
-		text, _ = renderer.Render(text)
-		result += text
+	joined := strings.Join(paragraphs, "\n\n")
+	text, err := converter.ConvertString(joined)
+	if err != nil {
+		util.Logger.Fatalln(err)
+		return util.PadText("Unable to parse and print article", width)
+	}
+	result, err := renderer.Render(text)
+	if err != nil {
+		util.Logger.Fatalln(err)
+		return util.PadText("Unable to parse and print article", width)
 	}
 	return util.PadText(result, width)
 }
