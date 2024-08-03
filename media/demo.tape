@@ -15,22 +15,20 @@ Set PlaybackSpeed 2.0
 Type "nachrichten" Sleep 1000ms
 Enter
 
-Sleep 4s
+Sleep 3s
 
-Type j Sleep 500ms
-Type j Sleep 500ms
-Type j Sleep 500ms
-Type j Sleep 500ms
+Tab Sleep 2000ms
+Tab Sleep 2000ms
+Type j Sleep 2000ms
+Type k Sleep 2000ms
 Type l Sleep 1000ms
-Down@300ms 10
+Down@500ms 10
 Sleep 1000ms
 Type f Sleep 2000ms
+Type i Sleep 3000ms
 Type d Sleep 3000ms
 Type "2" Sleep 3000ms
-Type i Sleep 2000ms
-Type f Sleep 1000ms
-
-Sleep 2s
+Type f Sleep 2000ms
 
 Type q
 
