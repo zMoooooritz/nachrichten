@@ -70,7 +70,6 @@ func main() {
 
 	p := tea.NewProgram(tui.InitialModel(configuration),
 		tea.WithAltScreen(),
-		// tea.WithMouseCellMotion(),
 	)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("There's been an error: %v", err)

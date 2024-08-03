@@ -18,8 +18,7 @@ const (
 )
 
 var (
-	news      tagesschau.News
-	imageSpec = tagesschau.ImageSpec{Size: tagesschau.SMALL, Ratio: tagesschau.RECT}
+	news tagesschau.News
 )
 
 type Model struct {
@@ -151,8 +150,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	for i, viewer := range m.viewers {
-		updateViewer, cmd := viewer.Update(msg)
-		m.viewers[i] = updateViewer
+		updatedViewer, cmd := viewer.Update(msg)
+		m.viewers[i] = updatedViewer
 		cmds = append(cmds, cmd)
 	}
 
@@ -180,6 +179,7 @@ func (m Model) activeViewer() Viewer {
 }
 
 func (m *Model) loadThumbnails() {
+	imageSpec := tagesschau.ImageSpec{Size: tagesschau.SMALL, Ratio: tagesschau.RECT}
 	for _, a := range news.NationalNews {
 		_ = m.imageCache.LoadImage(a.ID, tagesschau.GetImageURL(a.ImageData.ImageVariants, imageSpec))
 	}
@@ -249,12 +249,7 @@ func (m *Model) updateSizes(width, height int) {
 
 	m.selector.SetDims(m.width/3, m.height-m.helper.Height()-5)
 
-	isViewerFullscreen := false
-	for _, viewer := range m.viewers {
-		if viewer.IsFullScreen() {
-			isViewerFullscreen = true
-		}
-	}
+	isViewerFullscreen := m.activeViewer().IsFullScreen()
 	for _, viewer := range m.viewers {
 		if isViewerFullscreen {
 			viewer.SetDims(m.width, m.height-m.helper.Height())
