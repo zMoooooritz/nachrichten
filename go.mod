@@ -8,9 +8,9 @@ require (
 	github.com/aybabtme/rgbterm v0.0.0-20170906152045-cc83f3b3ce59
 	github.com/buger/jsonparser v1.1.1
 	github.com/charmbracelet/bubbles v0.18.0
-	github.com/charmbracelet/bubbletea v0.27.0
+	github.com/charmbracelet/bubbletea v0.27.1
 	github.com/charmbracelet/glamour v0.8.0
-	github.com/charmbracelet/lipgloss v0.12.1
+	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/muesli/reflow v0.3.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	golang.org/x/text v0.17.0
