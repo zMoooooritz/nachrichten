@@ -247,14 +247,17 @@ func (m *Model) updateSizes(width, height int) {
 	m.width = width
 	m.height = height
 
-	m.selector.SetDims(m.width/3, m.height-m.helper.Height()-5)
+	selectorWidthMultiplier := max(min(m.config.Settings.SelectorWidth, 0.8), 0.2)
+	selectorWidth := int(float32(m.width) * selectorWidthMultiplier)
+
+	m.selector.SetDims(selectorWidth, m.height-m.helper.Height()-5)
 
 	isViewerFullscreen := m.activeViewer().IsFullScreen()
 	for _, viewer := range m.viewers {
 		if isViewerFullscreen {
 			viewer.SetDims(m.width, m.height-m.helper.Height())
 		} else {
-			viewer.SetDims(m.width-m.width/3-6, m.height-m.helper.Height())
+			viewer.SetDims(m.width-selectorWidth-6, m.height-m.helper.Height())
 		}
 	}
 

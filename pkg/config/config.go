@@ -15,8 +15,9 @@ type Configuration struct {
 }
 
 type Settings struct {
-	HideHelpOnStartup bool `yaml:"HideHelpOnStartup"`
-	PreloadThumbnails bool `yaml:"PreloadThumbnails"`
+	HideHelpOnStartup bool    `yaml:"HideHelpOnStartup"`
+	PreloadThumbnails bool    `yaml:"PreloadThumbnails"`
+	SelectorWidth     float32 `yaml:"SelectorWidth"`
 }
 
 type Keys struct {
@@ -87,6 +88,7 @@ func defaultConfiguration() Configuration {
 		Settings: Settings{
 			HideHelpOnStartup: false,
 			PreloadThumbnails: false,
+			SelectorWidth:     0.3,
 		},
 		Keys:         defaultKeys(),
 		Applications: Applications{},

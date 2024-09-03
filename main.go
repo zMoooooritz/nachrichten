@@ -68,7 +68,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	p := tea.NewProgram(tui.InitialModel(configuration))
+	p := tea.NewProgram(tui.InitialModel(configuration),
+		tea.WithAltScreen(),
+	)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("There's been an error: %v", err)
 		os.Exit(1)

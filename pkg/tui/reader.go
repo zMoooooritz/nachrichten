@@ -42,7 +42,7 @@ func (r *Reader) SetArticle(article tagesschau.Article) {
 }
 
 func (r Reader) formatParagraphs(paragraphs []string) string {
-	width := r.viewport.Width - 2
+	width := r.viewport.Width - 6
 	options := md.Options{
 		EscapeMode: "disabled",
 	}
