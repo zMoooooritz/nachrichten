@@ -29,7 +29,7 @@ func (i ImageViewer) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
-	if i.isFocused {
+	if i.isFocused || i.isFullScreen {
 		i.viewport, cmd = i.viewport.Update(msg)
 		cmds = append(cmds, cmd)
 	}

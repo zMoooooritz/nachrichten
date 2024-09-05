@@ -139,11 +139,11 @@ func (v BaseViewer) Update(msg tea.Msg) (BaseViewer, tea.Cmd) {
 				v.isFocused = false
 			}
 		case key.Matches(msg, v.keymap.start):
-			if v.isFocused {
+			if v.isFocused || v.isFullScreen {
 				v.GotoTop()
 			}
 		case key.Matches(msg, v.keymap.end):
-			if v.isFocused {
+			if v.isFocused || v.isFullScreen {
 				v.GotoBottom()
 			}
 		case key.Matches(msg, v.keymap.full):

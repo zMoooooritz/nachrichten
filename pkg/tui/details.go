@@ -27,7 +27,7 @@ func (d Details) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
-	if d.isFocused {
+	if d.IsFocused() || d.isFullScreen {
 		d.viewport, cmd = d.viewport.Update(msg)
 		cmds = append(cmds, cmd)
 	}
