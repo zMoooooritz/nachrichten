@@ -40,8 +40,7 @@ type Viewer interface {
 
 type BaseViewer struct {
 	viewerType   ViewerType
-	style        config.Style
-	keymap       KeyMap
+	shared       *SharedState
 	isActive     bool
 	isFocused    bool
 	isFullScreen bool
@@ -51,13 +50,12 @@ type BaseViewer struct {
 	viewport     viewport.Model
 }
 
-func NewViewer(viewerType ViewerType, s config.Style, keys config.Keys, isActive bool) BaseViewer {
+func NewViewer(viewerType ViewerType, shared *SharedState, isActive bool) BaseViewer {
 	vp := viewport.New(0, 0)
-	vp.KeyMap = ViewportKeymap(keys)
+	vp.KeyMap = ViewportKeymap(shared.keys)
 	return BaseViewer{
+		shared:     shared,
 		viewerType: viewerType,
-		style:      s,
-		keymap:     GetKeyMap(keys),
 		isActive:   isActive,
 		viewport:   vp,
 	}
@@ -129,24 +127,28 @@ func (v BaseViewer) Init() tea.Cmd {
 func (v BaseViewer) Update(msg tea.Msg) (BaseViewer, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if v.shared.mode == INSERT_MODE {
+			break
+		}
+
 		switch {
-		case key.Matches(msg, v.keymap.right):
+		case key.Matches(msg, v.shared.keymap.right):
 			if v.isActive {
 				v.isFocused = true
 			}
-		case key.Matches(msg, v.keymap.left):
+		case key.Matches(msg, v.shared.keymap.left):
 			if v.isActive {
 				v.isFocused = false
 			}
-		case key.Matches(msg, v.keymap.start):
+		case key.Matches(msg, v.shared.keymap.start):
 			if v.isFocused || v.isFullScreen {
 				v.GotoTop()
 			}
-		case key.Matches(msg, v.keymap.end):
+		case key.Matches(msg, v.shared.keymap.end):
 			if v.isFocused || v.isFullScreen {
 				v.GotoBottom()
 			}
-		case key.Matches(msg, v.keymap.full):
+		case key.Matches(msg, v.shared.keymap.full):
 			if v.isActive {
 				v.isFullScreen = !v.isFullScreen
 			}
@@ -164,14 +166,14 @@ func (v BaseViewer) View() string {
 }
 
 func (v BaseViewer) headerView() string {
-	titleStyle := v.style.ReaderTitleInactiveStyle
-	lineStyle := v.style.InactiveStyle
-	dateStyle := v.style.ReaderInfoInactiveStyle
+	titleStyle := v.shared.style.ReaderTitleInactiveStyle
+	lineStyle := v.shared.style.InactiveStyle
+	dateStyle := v.shared.style.ReaderInfoInactiveStyle
 	fillCharacter := config.SingleFillCharacter
 	if v.isFocused || v.isFullScreen {
-		titleStyle = v.style.ReaderTitleActiveStyle
-		lineStyle = v.style.ActiveStyle
-		dateStyle = v.style.ReaderInfoActiveStyle
+		titleStyle = v.shared.style.ReaderTitleActiveStyle
+		lineStyle = v.shared.style.ActiveStyle
+		dateStyle = v.shared.style.ReaderInfoActiveStyle
 		fillCharacter = config.DoubleFillCharacter
 	}
 
@@ -183,14 +185,14 @@ func (v BaseViewer) headerView() string {
 }
 
 func (v BaseViewer) footerView() string {
-	modeStyle := v.style.ReaderTitleInactiveStyle
-	infoStyle := v.style.ReaderInfoInactiveStyle
-	lineStyle := v.style.InactiveStyle
+	modeStyle := v.shared.style.ReaderTitleInactiveStyle
+	infoStyle := v.shared.style.ReaderInfoInactiveStyle
+	lineStyle := v.shared.style.InactiveStyle
 	fillCharacter := config.SingleFillCharacter
 	if v.isFocused || v.isFullScreen {
-		modeStyle = v.style.ReaderTitleActiveStyle
-		infoStyle = v.style.ReaderInfoActiveStyle
-		lineStyle = v.style.ActiveStyle
+		modeStyle = v.shared.style.ReaderTitleActiveStyle
+		infoStyle = v.shared.style.ReaderInfoActiveStyle
+		lineStyle = v.shared.style.ActiveStyle
 		fillCharacter = config.DoubleFillCharacter
 	}
 

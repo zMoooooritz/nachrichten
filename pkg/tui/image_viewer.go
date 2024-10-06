@@ -24,11 +24,19 @@ func NewImageViewer(viewer BaseViewer, ic *ImageCache) *ImageViewer {
 	}
 }
 
-func (i ImageViewer) Update(msg tea.Msg) (Viewer, tea.Cmd) {
+func (i *ImageViewer) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
+
+	switch msg := msg.(type) {
+	case ChangedActiveArticle:
+		i.SetArticle(tagesschau.Article(msg))
+	case RefreshActiveViewer:
+		i.SetArticle(i.shared.activeArticle)
+	}
+
 	if i.isFocused || i.isFullScreen {
 		i.viewport, cmd = i.viewport.Update(msg)
 		cmds = append(cmds, cmd)

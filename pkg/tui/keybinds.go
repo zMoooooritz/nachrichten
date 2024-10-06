@@ -20,6 +20,11 @@ type KeyMap struct {
 	full      key.Binding
 	start     key.Binding
 	end       key.Binding
+	pageUp    key.Binding
+	pageDown  key.Binding
+	search    key.Binding
+	confirm   key.Binding
+	escape    key.Binding
 	article   key.Binding
 	image     key.Binding
 	details   key.Binding
@@ -42,6 +47,11 @@ func GetKeyMap(keys config.Keys) KeyMap {
 		full:      toHelpBinding(keys.Full, "full"),
 		start:     toHelpBinding(keys.Start, "start"),
 		end:       toHelpBinding(keys.End, "end"),
+		pageUp:    toHelpBinding(keys.PageUp, "pageup"),
+		pageDown:  toHelpBinding(keys.PageDown, "pagedown"),
+		search:    toHelpBinding(keys.Search, "search"),
+		confirm:   toHelpBinding(keys.Confirm, "confirm"),
+		escape:    toHelpBinding(keys.Escape, "escape"),
 		article:   toHelpBinding(keys.ShowArticle, "article"),
 		image:     toHelpBinding(keys.ShowThumbnail, "image"),
 		details:   toHelpBinding(keys.ShowDetails, "details"),
@@ -107,8 +117,8 @@ func ViewportKeymap(k config.Keys) viewport.KeyMap {
 	km := viewport.DefaultKeyMap()
 	km.Up = toBinding(k.Up)
 	km.Down = toBinding(k.Down)
-	km.PageUp = toBinding(k.Start)
-	km.PageDown = toBinding(k.End)
+	km.PageUp = toBinding(k.PageUp)
+	km.PageDown = toBinding(k.PageDown)
 	km.HalfPageUp = disabledBinding()
 	km.HalfPageDown = disabledBinding()
 	return km
@@ -120,8 +130,8 @@ func ListKeymap(k config.Keys) list.KeyMap {
 	km.CursorDown = toBinding(k.Down)
 	km.GoToStart = toBinding(k.Start)
 	km.GoToEnd = toBinding(k.End)
-	km.PrevPage = disabledBinding()
-	km.NextPage = disabledBinding()
+	km.PrevPage = toBinding(k.PageUp)
+	km.NextPage = toBinding(k.PageDown)
 	km.Filter = disabledBinding()
 	km.ClearFilter = disabledBinding()
 	km.CancelWhileFiltering = disabledBinding()

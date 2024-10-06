@@ -67,6 +67,10 @@ The default keybinds are as follows:
 | arrows / hjkl    | navigation             |
 | g / G            | goto start / end       |
 | tab / shift+tab  | change tabs            |
+| pgup / pgdown    | page up / down         |
+| /                | open search dialog     |
+| enter            | confirm search input   |
+| esc              | abort search input     |
 | f                | maximize reader/viewer |
 | a                | show article view      |
 | i                | show thumbnail view    |

@@ -13,7 +13,8 @@ import (
 
 const (
 	baseUrl      string = "https://www.tagesschau.de/"
-	apiUrl       string = baseUrl + "api2u/homepage"
+	homepageAPI  string = baseUrl + "api2u/homepage/"
+	searchAPI    string = baseUrl + "api2u/search/"
 	shortNewsUrl string = baseUrl + "multimedia/sendung/tagesschau_in_100_sekunden"
 )
 
@@ -37,6 +38,14 @@ type ImageSpec struct {
 type News struct {
 	NationalNews []Article `json:"news"`
 	RegionalNews []Article `json:"regional"`
+}
+
+type SearchResult struct {
+	SearchText     string    `json:"searchText"`
+	PageSize       int       `json:"pageSize"`
+	ResultPage     int       `json:"resultPage"`
+	TotalItemCount int       `json:"totalItemCount"`
+	Articles       []Article `json:"searchResults"`
 }
 
 type Article struct {
@@ -125,7 +134,7 @@ func RegionIdToName(id int) (string, error) {
 
 func LoadNews() (News, error) {
 	var news News
-	body, err := http.FetchURL(apiUrl)
+	body, err := http.FetchURL(homepageAPI)
 	if err != nil {
 		return news, err
 	}
@@ -137,6 +146,23 @@ func LoadNews() (News, error) {
 	news.NationalNews = deduplicateArticles(news.NationalNews)
 	news.RegionalNews = deduplicateArticles(news.RegionalNews)
 	return news, nil
+}
+
+func SearchArticles(searchTerm string) (SearchResult, error) {
+	var result SearchResult
+
+	body, err := http.FetchURL(searchAPI + "?searchText=" + searchTerm)
+	if err != nil {
+		return result, err
+	}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return result, err
+	}
+	result.Articles = deduplicateArticles(result.Articles)
+	result.Articles = removeUnreadableArticles(result.Articles)
+	return result, nil
 }
 
 func LoadArticle(url string) (*Article, error) {
@@ -165,6 +191,16 @@ func deduplicateArticles(articles []Article) []Article {
 		deduped = append(deduped, entry)
 	}
 	return deduped
+}
+
+func removeUnreadableArticles(articles []Article) []Article {
+	cleaned := []Article{}
+	for _, article := range articles {
+		if len(article.Content) != 0 {
+			cleaned = append(cleaned, article)
+		}
+	}
+	return cleaned
 }
 
 func GetImageURL(variants ImageVariants, imageSpec ImageSpec) string {

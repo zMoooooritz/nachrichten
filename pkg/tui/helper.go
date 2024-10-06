@@ -5,7 +5,6 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/zMoooooritz/nachrichten/pkg/config"
 )
 
 type HelpState int
@@ -17,27 +16,27 @@ const (
 )
 
 type Helper struct {
+	shared *SharedState
 	model  help.Model
-	keymap KeyMap
 	state  HelpState
 }
 
-func NewHelper(s config.Style, keys config.Keys, state HelpState) *Helper {
+func NewHelper(shared *SharedState, hstate HelpState) *Helper {
 	h := Helper{
+		shared: shared,
 		model:  help.New(),
-		keymap: GetKeyMap(keys),
-		state:  state,
+		state:  hstate,
 	}
 	h.model.FullSeparator = " • "
-	h.model.Styles.ShortKey = s.InactiveStyle
-	h.model.Styles.FullKey = s.InactiveStyle
+	h.model.Styles.ShortKey = shared.style.InactiveStyle
+	h.model.Styles.FullKey = shared.style.InactiveStyle
 
 	return &h
 }
 
 func (h Helper) View() string {
 	if h.IsVisible() {
-		return "\n" + lipgloss.NewStyle().Width(h.model.Width).AlignHorizontal(lipgloss.Center).Render(h.model.View(h.keymap))
+		return "\n" + lipgloss.NewStyle().Width(h.model.Width).AlignHorizontal(lipgloss.Center).Render(h.model.View(h.shared.keymap))
 	}
 	return ""
 }
@@ -45,8 +44,12 @@ func (h Helper) View() string {
 func (h *Helper) Update(msg tea.Msg) (*Helper, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if h.shared.mode == INSERT_MODE {
+			break
+		}
+
 		switch {
-		case key.Matches(msg, h.keymap.help):
+		case key.Matches(msg, h.shared.keymap.help):
 			h.nextState()
 		}
 	}

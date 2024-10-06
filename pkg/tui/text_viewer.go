@@ -21,11 +21,19 @@ func NewReader(viewer BaseViewer) *Reader {
 	}
 }
 
-func (r Reader) Update(msg tea.Msg) (Viewer, tea.Cmd) {
+func (r *Reader) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
+
+	switch msg := msg.(type) {
+	case ChangedActiveArticle:
+		r.SetArticle(tagesschau.Article(msg))
+	case RefreshActiveViewer:
+		r.SetArticle(r.shared.activeArticle)
+	}
+
 	if r.IsFocused() || r.isFullScreen {
 		r.viewport, cmd = r.viewport.Update(msg)
 		cmds = append(cmds, cmd)
@@ -49,7 +57,7 @@ func (r Reader) formatParagraphs(paragraphs []string) string {
 	converter := md.NewConverter("", true, &options)
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithWordWrap(width),
-		glamour.WithStyles(r.style.ReaderStyle),
+		glamour.WithStyles(r.shared.style.ReaderStyle),
 	)
 	if err != nil {
 		util.Logger.Fatalln(err)

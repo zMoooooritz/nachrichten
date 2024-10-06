@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,18 +23,55 @@ func NewDetails(viewer BaseViewer) *Details {
 	}
 }
 
-func (d Details) Update(msg tea.Msg) (Viewer, tea.Cmd) {
+func (d *Details) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
-	if d.IsFocused() || d.isFullScreen {
+
+	switch msg := msg.(type) {
+	case ChangedActiveArticle:
+		d.SetArticle(tagesschau.Article(msg))
+	case RefreshActiveViewer:
+		d.SetArticle(d.shared.activeArticle)
+	}
+
+	if d.isFocused || d.isFullScreen {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			keyStr := msg.String()
+			if keyStr >= "0" && keyStr <= "9" {
+				keyInt, _ := strconv.Atoi(keyStr)
+				cmd = d.handleNumberInput(keyInt)
+				cmds = append(cmds, cmd)
+			}
+		}
+
 		d.viewport, cmd = d.viewport.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 	bv, cmd := d.BaseViewer.Update(msg)
 	cmds = append(cmds, cmd)
 	return &Details{BaseViewer: bv}, tea.Batch(cmds...)
+}
+
+func (d *Details) handleNumberInput(number int) tea.Cmd {
+	related := d.shared.activeArticle.GetRelatedArticles()
+	index := number - 1
+	if 0 <= index && index < len(related) {
+		article, err := tagesschau.LoadArticle(related[index].Details)
+		if err == nil {
+			return tea.Batch(
+				func() tea.Msg {
+					return ChangedActiveArticle(*article)
+				},
+				func() tea.Msg {
+					return ShowTextViewer{}
+				},
+			)
+		}
+	}
+	return nil
 }
 
 func (d *Details) SetArticle(article tagesschau.Article) {
@@ -49,7 +87,7 @@ func (d Details) buildDetails(article tagesschau.Article) string {
 		details = d.buildNationalArticleDetails(article)
 	}
 
-	return d.style.InactiveStyle.Render(details)
+	return d.shared.style.InactiveStyle.Render(details)
 }
 
 func (d Details) buildRegionalArticleDetails(article tagesschau.Article) string {
@@ -70,7 +108,7 @@ func (d Details) buildRegionalArticleDetails(article tagesschau.Article) string 
 	if len(article.RegionIDs) == 1 {
 		strBuf += d.renderEntry("Region", regionStr) + "\n"
 	} else {
-		strBuf += d.style.ActiveHighlightStyle.Render("Regionen:") + "\n"
+		strBuf += d.shared.style.ActiveHighlightStyle.Render("Regionen:") + "\n"
 		strBuf += regionsStr
 	}
 	caser := cases.Title(language.English)
@@ -87,12 +125,12 @@ func (d Details) buildNationalArticleDetails(article tagesschau.Article) string 
 	}
 	relatedStr := ""
 	for index, related := range article.GetRelatedArticles() {
-		ident := d.style.HighlightStyle.Render(fmt.Sprintf("  [%d] ", index+1))
+		ident := d.shared.style.HighlightStyle.Render(fmt.Sprintf("  [%d] ", index+1))
 		repr := strings.TrimSpace(related.Topline)
 		if strings.TrimSpace(related.Desc) != "" {
 			repr += " - " + strings.TrimSpace(related.Desc)
 		}
-		relatedStr += ident + d.style.InactiveStyle.Render(repr) + "\n"
+		relatedStr += ident + d.shared.style.InactiveStyle.Render(repr) + "\n"
 	}
 
 	strBuf := d.renderEntry("Titel", article.Topline) + "\n"
@@ -103,10 +141,10 @@ func (d Details) buildNationalArticleDetails(article tagesschau.Article) string 
 	}
 	strBuf += d.renderEntry("Typ", caser.String(article.Type)) + "\n"
 	strBuf += d.breakingText(article.Breaking) + "\n"
-	strBuf += d.style.ActiveHighlightStyle.Render("Tags:") + "\n"
+	strBuf += d.shared.style.ActiveHighlightStyle.Render("Tags:") + "\n"
 	strBuf += tagStr
 	if len(relatedStr) > 0 {
-		strBuf += d.style.ActiveHighlightStyle.Render("Verwandt:") + "\n"
+		strBuf += d.shared.style.ActiveHighlightStyle.Render("Verwandt:") + "\n"
 		strBuf += relatedStr
 	}
 
@@ -114,7 +152,7 @@ func (d Details) buildNationalArticleDetails(article tagesschau.Article) string 
 }
 
 func (d Details) renderEntry(header, content string) string {
-	return d.style.ActiveHighlightStyle.Render(header+": ") + d.style.InactiveStyle.Render(content)
+	return d.shared.style.ActiveHighlightStyle.Render(header+": ") + d.shared.style.InactiveStyle.Render(content)
 }
 
 func (d Details) breakingText(breaking bool) string {

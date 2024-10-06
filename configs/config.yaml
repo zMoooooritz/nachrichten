@@ -3,7 +3,7 @@
 Settings:
   HideHelpOnStartup: true
   PreloadThumbnails: true
-  SelectorWidth: 0.3
+  NavigatorWidth: 0.3
 
 # Configuration of keybinds used in the application
 Keys:
@@ -31,6 +31,18 @@ Keys:
   End:
     - G
     - end
+  PageUp:
+    - ctrl+b
+    - pgup
+  PageDown:
+    - ctrl+f
+    - pgdown
+  Search:
+    - "/"
+  Confirm:
+    - enter
+  Escape:
+    - esc
   Quit:
     - q
     - esc

@@ -17,7 +17,7 @@ type Configuration struct {
 type Settings struct {
 	HideHelpOnStartup bool    `yaml:"HideHelpOnStartup"`
 	PreloadThumbnails bool    `yaml:"PreloadThumbnails"`
-	SelectorWidth     float32 `yaml:"SelectorWidth"`
+	NavigatorWidth    float32 `yaml:"NavigatorWidth"`
 }
 
 type Keys struct {
@@ -30,6 +30,11 @@ type Keys struct {
 	Full          []string `yaml:"Full"`
 	Start         []string `yaml:"Start"`
 	End           []string `yaml:"End"`
+	PageUp        []string `yaml:"PageUp"`
+	PageDown      []string `yaml:"PageDown"`
+	Search        []string `yaml:"Search"`
+	Confirm       []string `yaml:"Confirm"`
+	Escape        []string `yaml:"Escape"`
 	Quit          []string `yaml:"Quit"`
 	ShowArticle   []string `yaml:"ShowArticle"`
 	ShowThumbnail []string `yaml:"ShowThumbnail"`
@@ -88,7 +93,7 @@ func defaultConfiguration() Configuration {
 		Settings: Settings{
 			HideHelpOnStartup: false,
 			PreloadThumbnails: false,
-			SelectorWidth:     0.3,
+			NavigatorWidth:    0.3,
 		},
 		Keys:         defaultKeys(),
 		Applications: Applications{},
@@ -108,6 +113,11 @@ func defaultKeys() Keys {
 		Start:         []string{"g", "home"},
 		End:           []string{"G", "end"},
 		Quit:          []string{"q", "esc", "ctrl+c"},
+		PageUp:        []string{"ctrl+b", "pgup"},
+		PageDown:      []string{"ctrl+f", "pgdown"},
+		Search:        []string{"/"},
+		Confirm:       []string{"enter"},
+		Escape:        []string{"esc"},
 		ShowArticle:   []string{"a"},
 		ShowThumbnail: []string{"i"},
 		ShowDetails:   []string{"d"},

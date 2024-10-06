@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
 )
 
 func NewDotSpinner() spinner.Model {
@@ -11,3 +12,9 @@ func NewDotSpinner() spinner.Model {
 }
 
 type LoadingNewsFailed struct{}
+type LoadingArticlesFailed struct{}
+
+type ChangedActiveArticle tagesschau.Article
+type ShowTextViewer struct{}
+
+type RefreshActiveViewer struct{}
