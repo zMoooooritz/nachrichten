@@ -68,7 +68,13 @@ type Article struct {
 	DetailsWeb   string     `json:"detailsweb"`
 }
 
-func (n Article) Title() string       { return n.Topline }
+func (n Article) Title() string {
+	if n.Topline != "" {
+		return n.Topline
+	}
+	return n.Desc
+}
+
 func (n Article) Description() string { return n.Desc }
 func (n Article) FilterValue() string { return n.Topline }
 

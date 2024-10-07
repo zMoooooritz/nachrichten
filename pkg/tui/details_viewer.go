@@ -36,14 +36,13 @@ func (d *Details) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 		d.SetArticle(d.shared.activeArticle)
 	}
 
-	if d.isFocused || d.isFullScreen {
+	if d.isActive {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			keyStr := msg.String()
 			if keyStr >= "0" && keyStr <= "9" {
 				keyInt, _ := strconv.Atoi(keyStr)
-				cmd = d.handleNumberInput(keyInt)
-				cmds = append(cmds, cmd)
+				cmds = append(cmds, d.handleNumberInput(keyInt))
 			}
 		}
 
@@ -62,12 +61,8 @@ func (d *Details) handleNumberInput(number int) tea.Cmd {
 		article, err := tagesschau.LoadArticle(related[index].Details)
 		if err == nil {
 			return tea.Batch(
-				func() tea.Msg {
-					return ChangedActiveArticle(*article)
-				},
-				func() tea.Msg {
-					return ShowTextViewer{}
-				},
+				func() tea.Msg { return ChangedActiveArticle(*article) },
+				func() tea.Msg { return ShowTextViewer{} },
 			)
 		}
 	}

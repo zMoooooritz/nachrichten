@@ -15,6 +15,5 @@ type LoadingNewsFailed struct{}
 type LoadingArticlesFailed struct{}
 
 type ChangedActiveArticle tagesschau.Article
-type ShowTextViewer struct{}
-
 type RefreshActiveViewer struct{}
+type ShowTextViewer struct{}

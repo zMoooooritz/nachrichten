@@ -12,15 +12,13 @@ import (
 type ImageViewer struct {
 	BaseViewer
 	image image.Image
-	cache *ImageCache
 }
 
-func NewImageViewer(viewer BaseViewer, ic *ImageCache) *ImageViewer {
+func NewImageViewer(viewer BaseViewer) *ImageViewer {
 	viewer.modeName = "Bild"
 	return &ImageViewer{
 		BaseViewer: viewer,
 		image:      image.Rect(0, 0, 1, 1),
-		cache:      ic,
 	}
 }
 
@@ -43,12 +41,12 @@ func (i *ImageViewer) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 	}
 	bv, cmd := i.BaseViewer.Update(msg)
 	cmds = append(cmds, cmd)
-	return &ImageViewer{BaseViewer: bv, image: i.image, cache: i.cache}, tea.Batch(cmds...)
+	return &ImageViewer{BaseViewer: bv, image: i.image}, tea.Batch(cmds...)
 }
 
 func (i *ImageViewer) SetArticle(article tagesschau.Article) {
 	i.SetHeaderData(article)
-	img := i.cache.GetImage(article.ID, article.ImageData.ImageVariants.RectSmall)
+	img := i.shared.imageCache.GetImage(article.ID, article.ImageData.ImageVariants.RectSmall)
 	i.pushImageToViewer(img)
 }
 

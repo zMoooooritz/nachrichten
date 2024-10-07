@@ -115,7 +115,11 @@ func (v *BaseViewer) SetHeaderData(article tagesschau.Article) {
 	if article.IsRegionalArticle() {
 		v.title = article.Desc
 	} else {
-		v.title = article.Topline
+		if article.Topline != "" {
+			v.title = article.Topline
+		} else {
+			v.title = article.Desc
+		}
 	}
 	v.date = article.Date.Format(germanDateFormat)
 }

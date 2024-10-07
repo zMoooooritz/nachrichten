@@ -26,11 +26,10 @@ type Model struct {
 	ready         bool
 	loadingFailed bool
 	shared        *SharedState
-	helper        *Helper
 	navigator     *Navigator
-	viewers       []Viewer
+	viewManager   *ViewManager
+	helper        *Helper
 	spinner       spinner.Model
-	imageCache    *ImageCache
 	width         int
 	height        int
 }
@@ -49,6 +48,7 @@ type SharedState struct {
 	keymap        KeyMap
 	config        config.Configuration
 	activeArticle tagesschau.Article
+	imageCache    *ImageCache
 }
 
 func InitialModel(c config.Configuration) Model {
@@ -57,32 +57,24 @@ func InitialModel(c config.Configuration) Model {
 		initialHelpState = HS_HIDDEN
 	}
 
-	ic := NewImageCache()
-
 	style := config.NewsStyle(c.Theme)
 	shared := &SharedState{
-		mode:   NORMAL_MODE,
-		style:  style,
-		keys:   c.Keys,
-		keymap: GetKeyMap(c.Keys),
-		config: c,
-	}
-
-	viewers := []Viewer{
-		NewReader(NewViewer(VT_TEXT, shared, true)),
-		NewImageViewer(NewViewer(VT_IMAGE, shared, false), ic),
-		NewDetails(NewViewer(VT_DETAILS, shared, false)),
+		mode:       NORMAL_MODE,
+		style:      style,
+		keys:       c.Keys,
+		keymap:     GetKeyMap(c.Keys),
+		config:     c,
+		imageCache: NewImageCache(),
 	}
 
 	return Model{
-		opener:     util.NewOpener(c.Applications),
-		ready:      false,
-		helper:     NewHelper(shared, initialHelpState),
-		navigator:  NewNavigator(shared),
-		shared:     shared,
-		viewers:    viewers,
-		spinner:    NewDotSpinner(),
-		imageCache: ic,
+		opener:      util.NewOpener(c.Applications),
+		ready:       false,
+		helper:      NewHelper(shared, initialHelpState),
+		navigator:   NewNavigator(shared),
+		shared:      shared,
+		viewManager: NewViewManager(shared),
+		spinner:     NewDotSpinner(),
 	}
 }
 
@@ -110,7 +102,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tagesschau.News:
 		news = tagesschau.News(msg)
 		if m.shared.config.Settings.PreloadThumbnails {
-			go m.preloadMainThumbnails()
+			go m.shared.imageCache.LoadThumbnails(append(news.NationalNews, news.RegionalNews...))
 		}
 		m.ready = true
 		m.shared.activeArticle = news.NationalNews[0]
@@ -118,11 +110,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ChangedActiveArticle:
 		article := tagesschau.Article(msg)
 		if m.shared.config.Settings.PreloadThumbnails {
-			go m.preloadThumbnail(article)
+			go m.shared.imageCache.LoadThumbnail(article)
 		}
 		m.shared.activeArticle = article
-	case ShowTextViewer:
-		m.showViewer(VT_TEXT)
 	case tea.KeyMsg:
 		if m.shared.mode != NORMAL_MODE {
 			break
@@ -137,12 +127,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		switch {
-		case key.Matches(msg, m.shared.keymap.article):
-			m.showViewer(VT_TEXT)
-		case key.Matches(msg, m.shared.keymap.image):
-			m.showViewer(VT_IMAGE)
-		case key.Matches(msg, m.shared.keymap.details):
-			m.showViewer(VT_DETAILS)
 		case key.Matches(msg, m.shared.keymap.open):
 			m.opener.OpenUrl(util.TypeHTML, m.shared.activeArticle.URL)
 		case key.Matches(msg, m.shared.keymap.video):
@@ -154,7 +138,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case tea.WindowSizeMsg:
-		m.updateSizes(msg.Width, msg.Height)
+		m.width = msg.Width
+		m.height = msg.Height
 		cmds = append(cmds, refreshFunc)
 	}
 
@@ -170,92 +155,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.navigator, cmd = m.navigator.Update(msg)
 	cmds = append(cmds, cmd)
 
-	for i, viewer := range m.viewers {
-		updatedViewer, cmd := viewer.Update(msg)
-		m.viewers[i] = updatedViewer
-		cmds = append(cmds, cmd)
-	}
+	m.viewManager, cmd = m.viewManager.Update(msg)
+	cmds = append(cmds, cmd)
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.shared.keymap.help):
-			m.updateSizes(m.width, m.height)
 		case key.Matches(msg, m.shared.keymap.full):
-			m.updateSizes(m.width, m.height)
 			cmds = append(cmds, refreshFunc)
 		}
 	}
 
 	return m, tea.Batch(cmds...)
-}
-
-func (m Model) activeViewer() Viewer {
-	for _, viewer := range m.viewers {
-		if viewer.IsActive() {
-			return viewer
-		}
-	}
-	return m.viewers[0]
-}
-
-func (m *Model) preloadMainThumbnails() {
-	imageSpec := tagesschau.ImageSpec{Size: tagesschau.SMALL, Ratio: tagesschau.RECT}
-	for _, a := range news.NationalNews {
-		_ = m.imageCache.LoadImage(a.ID, tagesschau.GetImageURL(a.ImageData.ImageVariants, imageSpec))
-	}
-	for _, a := range news.RegionalNews {
-		_ = m.imageCache.LoadImage(a.ID, tagesschau.GetImageURL(a.ImageData.ImageVariants, imageSpec))
-	}
-}
-
-func (m *Model) preloadThumbnail(article tagesschau.Article) {
-	imageSpec := tagesschau.ImageSpec{Size: tagesschau.SMALL, Ratio: tagesschau.RECT}
-	_ = m.imageCache.LoadImage(article.ID, tagesschau.GetImageURL(article.ImageData.ImageVariants, imageSpec))
-}
-
-func (m *Model) showViewer(vt ViewerType) tea.Cmd {
-	currViewer := m.activeViewer()
-	nextViewer := m.activeViewer()
-	for _, viewer := range m.viewers {
-		if viewer.ViewerType() == vt {
-			nextViewer = viewer
-		}
-	}
-	if currViewer.ViewerType() == nextViewer.ViewerType() {
-		return nil
-	}
-
-	nextViewer.SetActive(true)
-	nextViewer.SetFocused(currViewer.IsFocused())
-	nextViewer.SetFullScreen(currViewer.IsFullScreen())
-
-	currViewer.SetActive(false)
-	currViewer.SetFocused(false)
-	currViewer.SetFullScreen(false)
-
-	return refreshFunc
-}
-
-func (m *Model) updateSizes(width, height int) {
-	m.width = width
-	m.height = height
-
-	navigatorWidthMultiplier := max(min(m.shared.config.Settings.NavigatorWidth, 0.8), 0.2)
-	navigatorWidth := int(float32(m.width) * navigatorWidthMultiplier)
-
-	m.navigator.SetDims(navigatorWidth, m.height-m.helper.Height()-5)
-
-	isViewerFullscreen := m.activeViewer().IsFullScreen()
-	for _, viewer := range m.viewers {
-		if isViewerFullscreen {
-			viewer.SetDims(m.width, m.height-m.helper.Height())
-		} else {
-			viewer.SetDims(m.width-navigatorWidth-6, m.height-m.helper.Height())
-		}
-	}
-
-	m.helper.SetWidth(m.width)
 }
 
 func (m Model) View() string {
@@ -268,9 +179,16 @@ func (m Model) View() string {
 		return m.shared.style.ScreenCenteredStyle(m.width, m.height).Render(content)
 	}
 
-	navigator := m.navigator.View()
-	viewer := m.activeViewer().View()
+	m.helper.SetWidth(m.width)
 	help := m.helper.View()
+
+	navigatorWidthMultiplier := max(min(m.shared.config.Settings.NavigatorWidth, 0.8), 0.2)
+	navigatorWidth := int(float32(m.width) * navigatorWidthMultiplier)
+	m.navigator.SetDims(navigatorWidth, m.height-lipgloss.Height(help))
+	navigator := m.navigator.View()
+
+	m.viewManager.SetDims(m.width, m.height-m.helper.Height(), lipgloss.Width(navigator))
+	viewer := m.viewManager.View()
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, navigator, viewer) + help
 }

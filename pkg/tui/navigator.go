@@ -129,7 +129,7 @@ func (n Navigator) View() string {
 		style = n.shared.style.ListActiveStyle
 	}
 
-	n.selectors[n.activeSelectorIndex].SetDims(n.width, n.height-lipgloss.Height(headerView)-lipgloss.Height(selectorView)+2)
+	n.selectors[n.activeSelectorIndex].SetDims(n.width, n.height-lipgloss.Height(headerView)-lipgloss.Height(selectorView)-lipgloss.Height(style.Render(""))+1)
 
 	return style.Render(lipgloss.JoinVertical(lipgloss.Left, headerView, selectorView, n.selectors[n.activeSelectorIndex].View()))
 }
@@ -145,12 +145,13 @@ func (n Navigator) headerView() string {
 }
 
 func (n Navigator) selectorView(names []string, activeIndex int) string {
-	cellWidth := (n.width - 3*len(names)) / len(names)
+	cellWidth := (n.width - 2*len(names)) / len(names)
 	var widths []int
 	for i := 0; i < len(names)-1; i++ {
 		widths = append(widths, cellWidth)
 	}
 	widths = append(widths, n.width-(len(names)-1)*cellWidth-2*len(names))
+
 	result := ""
 	for i, name := range names {
 		border := n.shared.style.InactiveTabBorder
