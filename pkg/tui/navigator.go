@@ -54,9 +54,11 @@ func (n *Navigator) selectSearchSelector() {
 }
 
 func (n *Navigator) gotoSelector(index int) {
+	n.selectors[n.activeSelectorIndex].SetVisible(false)
 	n.selectors[n.activeSelectorIndex].SetActive(false)
 	n.selectors[n.activeSelectorIndex].SetFocused(false)
 	n.activeSelectorIndex = index
+	n.selectors[n.activeSelectorIndex].SetVisible(true)
 	n.selectors[n.activeSelectorIndex].SetActive(true)
 	n.selectors[n.activeSelectorIndex].SetFocused(true)
 }
@@ -101,7 +103,9 @@ func (n *Navigator) Update(msg tea.Msg) (*Navigator, tea.Cmd) {
 			case key.Matches(msg, n.shared.keymap.full):
 				n.isVisible = !n.isVisible
 			case key.Matches(msg, n.shared.keymap.search):
-				n.selectSearchSelector()
+				if n.isFocused && n.isVisible {
+					n.selectSearchSelector()
+				}
 			}
 		}
 	}
@@ -122,16 +126,16 @@ func (n Navigator) View() string {
 	}
 
 	headerView := n.headerView()
-	selectorView := n.selectorView([]string{nationalHeaderText, regionalHeaderText, searchHeaderText}, n.activeSelectorIndex)
+	tabView := n.tabView([]string{nationalHeaderText, regionalHeaderText, searchHeaderText}, n.activeSelectorIndex)
 
 	style := n.shared.style.ListInactiveStyle
 	if n.isFocused {
 		style = n.shared.style.ListActiveStyle
 	}
 
-	n.selectors[n.activeSelectorIndex].SetDims(n.width, n.height-lipgloss.Height(headerView)-lipgloss.Height(selectorView)-lipgloss.Height(style.Render(""))+1)
+	n.selectors[n.activeSelectorIndex].SetDims(n.width, n.height-lipgloss.Height(headerView)-lipgloss.Height(tabView)-lipgloss.Height(style.Render(""))+1)
 
-	return style.Render(lipgloss.JoinVertical(lipgloss.Left, headerView, selectorView, n.selectors[n.activeSelectorIndex].View()))
+	return lipgloss.JoinVertical(lipgloss.Left, headerView, style.Render(lipgloss.JoinVertical(lipgloss.Left, tabView, n.selectors[n.activeSelectorIndex].View())))
 }
 
 func (n Navigator) headerView() string {
@@ -140,11 +144,11 @@ func (n Navigator) headerView() string {
 		headerStyle = n.shared.style.ListHeaderActiveStyle
 	}
 
-	centeredHeader := lipgloss.PlaceHorizontal(n.width-2, lipgloss.Center, headerText)
+	centeredHeader := lipgloss.PlaceHorizontal(n.width, lipgloss.Center, headerText)
 	return headerStyle.Render(centeredHeader)
 }
 
-func (n Navigator) selectorView(names []string, activeIndex int) string {
+func (n Navigator) tabView(names []string, activeIndex int) string {
 	cellWidth := (n.width - 2*len(names)) / len(names)
 	var widths []int
 	for i := 0; i < len(names)-1; i++ {

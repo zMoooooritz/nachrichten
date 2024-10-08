@@ -27,9 +27,9 @@ type SearchSelector struct {
 
 func loadArticles(seachTerm string) tea.Cmd {
 	return func() tea.Msg {
-		articles, err := tagesschau.SearchArticles(seachTerm)
-		if err == nil {
-			return articles
+		searchResult, err := tagesschau.SearchArticles(seachTerm)
+		if err == nil && len(searchResult.Articles) > 0 {
+			return searchResult
 		}
 		return LoadingArticlesFailed{}
 	}
@@ -37,8 +37,12 @@ func loadArticles(seachTerm string) tea.Cmd {
 
 func NewSearchSelector(selector BaseSelector) *SearchSelector {
 	searchInput := textinput.New()
-	searchInput.Prompt = "> "
+	searchInput.Prompt = ""
 	searchInput.Placeholder = "Suche ..."
+	searchInput.PromptStyle = selector.shared.style.ItemSelectedTitle
+	searchInput.Cursor.Style = selector.shared.style.InactiveStyle
+	searchInput.Cursor.TextStyle = selector.shared.style.InactiveStyle
+	searchInput.TextStyle = selector.shared.style.InactiveStyle
 
 	selector.articles = noArticles
 	return &SearchSelector{
@@ -72,14 +76,16 @@ func (s *SearchSelector) Update(msg tea.Msg) (Selector, tea.Cmd) {
 		}
 		cmds = append(cmds, s.PushCurrentArticle())
 	case tea.KeyMsg:
-		if s.isFocused {
+		if s.isFocused && s.isVisible {
 			if s.shared.mode == NORMAL_MODE {
 				switch {
 				case key.Matches(msg, s.shared.keymap.search):
 					s.shared.mode = INSERT_MODE
 					s.search.Focus()
 					s.search.Reset()
-					return s, nil
+					bs, cmd := s.BaseSelector.Update(msg)
+					cmds = append(cmds, cmd)
+					return &SearchSelector{BaseSelector: bs, search: s.search}, tea.Batch(cmds...)
 				}
 			}
 			if s.shared.mode == NORMAL_MODE {
@@ -101,7 +107,7 @@ func (s *SearchSelector) Update(msg tea.Msg) (Selector, tea.Cmd) {
 		}
 	}
 
-	if s.isFocused {
+	if s.isFocused && s.isVisible {
 		s.search, cmd = s.search.Update(msg)
 		cmds = append(cmds, cmd)
 	}

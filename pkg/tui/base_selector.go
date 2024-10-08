@@ -19,6 +19,8 @@ const (
 type Selector interface {
 	PushCurrentArticle() tea.Cmd
 	SelectorType() SelectorType
+	SetVisible(bool)
+	IsVisible() bool
 	SetActive(bool)
 	IsActive() bool
 	SetFocused(bool)
@@ -33,6 +35,7 @@ type BaseSelector struct {
 	selectorType  SelectorType
 	shared        *SharedState
 	isActive      bool
+	isVisible     bool
 	isFocused     bool
 	width         int
 	height        int
@@ -48,6 +51,7 @@ func NewSelector(selectorType SelectorType, shared *SharedState, isActive bool) 
 		selectorType:  selectorType,
 		isActive:      isActive,
 		isFocused:     isActive,
+		isVisible:     true,
 		list:          initList(shared.style, listKeymap),
 		selectedIndex: 0,
 	}
@@ -84,6 +88,14 @@ func (s BaseSelector) PushCurrentArticle() tea.Cmd {
 
 func (s BaseSelector) SelectorType() SelectorType {
 	return s.selectorType
+}
+
+func (s *BaseSelector) SetVisible(isVisible bool) {
+	s.isVisible = isVisible
+}
+
+func (s *BaseSelector) IsVisible() bool {
+	return s.isVisible
 }
 
 func (s *BaseSelector) SetActive(isActive bool) {
@@ -131,6 +143,8 @@ func (s BaseSelector) Update(msg tea.Msg) (BaseSelector, tea.Cmd) {
 			if s.isActive {
 				s.isFocused = true
 			}
+		case key.Matches(msg, s.shared.keymap.full):
+			s.isVisible = !s.isVisible
 		}
 	}
 

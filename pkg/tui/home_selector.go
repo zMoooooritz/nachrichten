@@ -35,7 +35,7 @@ func (s *HomeSelector) Update(msg tea.Msg) (Selector, tea.Cmd) {
 		}
 		s.rebuildList()
 	case tea.KeyMsg:
-		if s.isFocused {
+		if s.isFocused && s.isVisible {
 			s.list, cmd = s.list.Update(msg)
 			cmds = append(cmds, cmd)
 		}

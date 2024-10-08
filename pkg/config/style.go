@@ -49,6 +49,20 @@ type Style struct {
 	ReaderStyle ansi.StyleConfig
 }
 
+func topDoubleBorder() lipgloss.Border {
+	border := lipgloss.DoubleBorder()
+	border.BottomRight = border.MiddleRight
+	border.BottomLeft = border.MiddleLeft
+	return border
+}
+
+func topRoundedBorder() lipgloss.Border {
+	border := lipgloss.RoundedBorder()
+	border.BottomRight = border.MiddleRight
+	border.BottomLeft = border.MiddleLeft
+	return border
+}
+
 func NewsStyle(t Theme) (s Style) {
 	primaryColor := lipgloss.Color(t.PrimaryColor)
 	shadedColor := lipgloss.Color(t.ShadedColor)
@@ -69,8 +83,8 @@ func NewsStyle(t Theme) (s Style) {
 	s.ActiveHighlightStyle = lipgloss.NewStyle().Foreground(highlightShadedColor).BorderForeground(highlightShadedColor).Bold(true)
 	s.HighlightStyle = lipgloss.NewStyle().Foreground(markerColor).BorderForeground(markerColor).Bold(true)
 	s.TitleActiveStyle = lipgloss.NewStyle().Background(highlightColor).Foreground(primaryColor)
-	s.ListActiveStyle = listBaseStyle.BorderForeground(highlightColor).BorderStyle(lipgloss.DoubleBorder())
-	s.ListHeaderActiveStyle = s.ActiveStyle.Padding(0, 1).Border(lipgloss.DoubleBorder(), false, false, true, false)
+	s.ListActiveStyle = listBaseStyle.BorderForeground(highlightColor).Border(lipgloss.DoubleBorder(), false, true, true, true)
+	s.ListHeaderActiveStyle = s.ActiveStyle.Padding(0, 1).Margin(0, 1).BorderStyle(topDoubleBorder())
 	s.ReaderTitleActiveStyle = func() lipgloss.Style {
 		b := lipgloss.DoubleBorder()
 		b.Right = "╠"
@@ -84,8 +98,8 @@ func NewsStyle(t Theme) (s Style) {
 
 	s.InactiveStyle = lipgloss.NewStyle().Foreground(primaryColor).BorderForeground(primaryColor)
 	s.TitleInactiveStyle = lipgloss.NewStyle().Foreground(primaryColor)
-	s.ListInactiveStyle = listBaseStyle.BorderForeground(primaryColor).BorderStyle(lipgloss.RoundedBorder())
-	s.ListHeaderInactiveStyle = s.InactiveStyle.Padding(0, 1).Border(lipgloss.RoundedBorder(), false, false, true, false)
+	s.ListInactiveStyle = listBaseStyle.BorderForeground(primaryColor).Border(lipgloss.RoundedBorder(), false, true, true, true)
+	s.ListHeaderInactiveStyle = s.InactiveStyle.Padding(0, 1).Margin(0, 1).BorderStyle(topRoundedBorder())
 	s.ReaderTitleInactiveStyle = func() lipgloss.Style {
 		b := lipgloss.RoundedBorder()
 		b.Right = "├"

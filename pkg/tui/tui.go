@@ -184,7 +184,7 @@ func (m Model) View() string {
 
 	navigatorWidthMultiplier := max(min(m.shared.config.Settings.NavigatorWidth, 0.8), 0.2)
 	navigatorWidth := int(float32(m.width) * navigatorWidthMultiplier)
-	m.navigator.SetDims(navigatorWidth, m.height-lipgloss.Height(help))
+	m.navigator.SetDims(navigatorWidth, m.height-m.helper.Height())
 	navigator := m.navigator.View()
 
 	m.viewManager.SetDims(m.width, m.height-m.helper.Height(), lipgloss.Width(navigator))
