@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -10,6 +11,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/config"
 	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
+)
+
+const (
+	emptyArticleHeader string = "LEER"
 )
 
 type ViewerType int
@@ -112,16 +117,21 @@ func (v *BaseViewer) SetDims(w, h int) {
 }
 
 func (v *BaseViewer) SetHeaderData(article tagesschau.Article) {
-	if article.IsRegionalArticle() {
+	date := time.Now()
+	if article.IsEmptyArticle() {
+		v.title = emptyArticleHeader
+	} else if article.IsRegionalArticle() {
 		v.title = article.Desc
+		date = article.Date
 	} else {
 		if article.Topline != "" {
 			v.title = article.Topline
 		} else {
 			v.title = article.Desc
 		}
+		date = article.Date
 	}
-	v.date = article.Date.Format(germanDateFormat)
+	v.date = date.Format(germanDateFormat)
 }
 
 func (v BaseViewer) Init() tea.Cmd {

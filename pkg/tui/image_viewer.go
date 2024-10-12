@@ -29,10 +29,8 @@ func (i *ImageViewer) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
-	case ChangedActiveArticle:
+	case UpdatedArticle:
 		i.SetArticle(tagesschau.Article(msg))
-	case RefreshActiveViewer:
-		i.SetArticle(i.shared.activeArticle)
 	}
 
 	if i.isFocused || i.isFullScreen {
@@ -46,8 +44,12 @@ func (i *ImageViewer) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 
 func (i *ImageViewer) SetArticle(article tagesschau.Article) {
 	i.SetHeaderData(article)
-	img := i.shared.imageCache.GetImage(article.ID, article.ImageData.ImageVariants.RectSmall)
-	i.pushImageToViewer(img)
+	if article.IsEmptyArticle() {
+		i.viewport.SetContent("")
+	} else {
+		img := i.shared.imageCache.GetImage(article.ID, article.ImageData.ImageVariants.RectSmall)
+		i.pushImageToViewer(img)
+	}
 }
 
 func (i *ImageViewer) pushImageToViewer(img image.Image) {

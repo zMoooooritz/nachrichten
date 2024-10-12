@@ -28,6 +28,7 @@ func NewHelper(shared *SharedState, hstate HelpState) *Helper {
 		state:  hstate,
 	}
 	h.model.FullSeparator = " • "
+	h.model.ShortSeparator = " • "
 	h.model.Styles.ShortKey = shared.style.InactiveStyle
 	h.model.Styles.FullKey = shared.style.InactiveStyle
 
@@ -35,10 +36,10 @@ func NewHelper(shared *SharedState, hstate HelpState) *Helper {
 }
 
 func (h Helper) View() string {
-	if h.IsVisible() {
-		return "\n" + lipgloss.NewStyle().Width(h.model.Width).AlignHorizontal(lipgloss.Center).Render(h.model.View(h.shared.keymap))
+	if !h.IsVisible() {
+		return ""
 	}
-	return ""
+	return lipgloss.NewStyle().Width(h.model.Width).AlignHorizontal(lipgloss.Center).Render(h.model.View(h.shared.keymap))
 }
 
 func (h *Helper) Update(msg tea.Msg) (*Helper, tea.Cmd) {
@@ -64,13 +65,6 @@ func (h *Helper) nextState() {
 	if h.state == HS_ALL {
 		h.model.ShowAll = true
 	}
-}
-
-func (h *Helper) Height() int {
-	if h.IsVisible() {
-		return 2
-	}
-	return 0
 }
 
 func (h *Helper) SetWidth(width int) {

@@ -14,6 +14,5 @@ func NewDotSpinner() spinner.Model {
 type LoadingNewsFailed struct{}
 type LoadingArticlesFailed struct{}
 
-type ChangedActiveArticle tagesschau.Article
-type RefreshActiveViewer struct{}
+type UpdatedArticle tagesschau.Article
 type ShowTextViewer struct{}

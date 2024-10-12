@@ -16,6 +16,8 @@ const (
 	homepageAPI  string = baseUrl + "api2u/homepage/"
 	searchAPI    string = baseUrl + "api2u/search/"
 	shortNewsUrl string = baseUrl + "multimedia/sendung/tagesschau_in_100_sekunden"
+
+	emptyArticleToken string = "EMPTY_ARTICLE"
 )
 
 type ImageSize int
@@ -66,6 +68,14 @@ type Article struct {
 	ID           string     `json:"externalId"`
 	Details      string     `json:"details"`
 	DetailsWeb   string     `json:"detailsweb"`
+}
+
+func EMPTY_ARTICLE() Article {
+	return Article{Type: emptyArticleToken}
+}
+
+func (n Article) IsEmptyArticle() bool {
+	return n.Type == emptyArticleToken
 }
 
 func (n Article) Title() string {

@@ -9,8 +9,6 @@ type ViewManager struct {
 	shared            *SharedState
 	viewers           []Viewer
 	activeViewerIndex int
-	width             int
-	height            int
 }
 
 func NewViewManager(shared *SharedState) *ViewManager {
@@ -28,15 +26,12 @@ func NewViewManager(shared *SharedState) *ViewManager {
 }
 
 func (v *ViewManager) SetDims(w, h, splitOffset int) {
-	v.width = w
-	v.height = h
-
 	isViewerFullscreen := v.activeViewer().IsFullScreen()
 	for _, viewer := range v.viewers {
 		if isViewerFullscreen {
-			viewer.SetDims(v.width, v.height)
+			viewer.SetDims(w, h)
 		} else {
-			viewer.SetDims(v.width-splitOffset, v.height)
+			viewer.SetDims(w-splitOffset, h)
 		}
 	}
 }
@@ -53,9 +48,11 @@ func (v ViewManager) activeViewer() Viewer {
 func (v *ViewManager) showViewer(vt ViewerType) tea.Cmd {
 	currViewer := v.activeViewer()
 	nextViewer := v.activeViewer()
-	for _, viewer := range v.viewers {
+	for index, viewer := range v.viewers {
 		if viewer.ViewerType() == vt {
 			nextViewer = viewer
+			v.activeViewerIndex = index
+			break
 		}
 	}
 	if currViewer.ViewerType() == nextViewer.ViewerType() {
@@ -70,7 +67,7 @@ func (v *ViewManager) showViewer(vt ViewerType) tea.Cmd {
 	currViewer.SetFocused(false)
 	currViewer.SetFullScreen(false)
 
-	return refreshFunc
+	return refreshFunc(v.shared.activeArticle)
 }
 
 func (v ViewManager) Init() tea.Cmd {
@@ -87,15 +84,16 @@ func (v *ViewManager) Update(msg tea.Msg) (*ViewManager, tea.Cmd) {
 	case ShowTextViewer:
 		v.showViewer(VT_TEXT)
 	case tea.KeyMsg:
-		if v.shared.mode == NORMAL_MODE {
-			switch {
-			case key.Matches(msg, v.shared.keymap.article):
-				v.showViewer(VT_TEXT)
-			case key.Matches(msg, v.shared.keymap.image):
-				v.showViewer(VT_IMAGE)
-			case key.Matches(msg, v.shared.keymap.details):
-				v.showViewer(VT_DETAILS)
-			}
+		if v.shared.mode == INSERT_MODE {
+			break
+		}
+		switch {
+		case key.Matches(msg, v.shared.keymap.article):
+			v.showViewer(VT_TEXT)
+		case key.Matches(msg, v.shared.keymap.image):
+			v.showViewer(VT_IMAGE)
+		case key.Matches(msg, v.shared.keymap.details):
+			v.showViewer(VT_DETAILS)
 		}
 	}
 

@@ -17,8 +17,7 @@ const (
 )
 
 var (
-	news        tagesschau.News
-	refreshFunc = func() tea.Msg { return RefreshActiveViewer{} }
+	news tagesschau.News
 )
 
 type Model struct {
@@ -82,6 +81,12 @@ func (m Model) Init() tea.Cmd {
 	return tea.Batch(loadNews, m.spinner.Tick)
 }
 
+func refreshFunc(article tagesschau.Article) tea.Cmd {
+	return func() tea.Msg {
+		return UpdatedArticle(article)
+	}
+}
+
 func loadNews() tea.Msg {
 	news, err := tagesschau.LoadNews()
 	if err == nil {
@@ -106,8 +111,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.ready = true
 		m.shared.activeArticle = news.NationalNews[0]
-		cmds = append(cmds, refreshFunc)
-	case ChangedActiveArticle:
+		cmds = append(cmds, refreshFunc(m.shared.activeArticle))
+	case UpdatedArticle:
 		article := tagesschau.Article(msg)
 		if m.shared.config.Settings.PreloadThumbnails {
 			go m.shared.imageCache.LoadThumbnail(article)
@@ -140,7 +145,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		cmds = append(cmds, refreshFunc)
+		cmds = append(cmds, refreshFunc(m.shared.activeArticle))
 	}
 
 	if !m.ready {
@@ -162,7 +167,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.shared.keymap.full):
-			cmds = append(cmds, refreshFunc)
+			cmds = append(cmds, refreshFunc(m.shared.activeArticle))
 		}
 	}
 
@@ -184,11 +189,21 @@ func (m Model) View() string {
 
 	navigatorWidthMultiplier := max(min(m.shared.config.Settings.NavigatorWidth, 0.8), 0.2)
 	navigatorWidth := int(float32(m.width) * navigatorWidthMultiplier)
-	m.navigator.SetDims(navigatorWidth, m.height-m.helper.Height())
+
+	helperHeight := lipgloss.Height(help)
+	if !m.helper.IsVisible() {
+		helperHeight = 0
+	}
+
+	m.navigator.SetDims(navigatorWidth, m.height-helperHeight)
 	navigator := m.navigator.View()
 
-	m.viewManager.SetDims(m.width, m.height-m.helper.Height(), lipgloss.Width(navigator))
+	m.viewManager.SetDims(m.width, m.height-helperHeight, lipgloss.Width(navigator))
 	viewer := m.viewManager.View()
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, navigator, viewer) + help
+	view := lipgloss.JoinHorizontal(lipgloss.Top, navigator, viewer)
+	if m.helper.IsVisible() {
+		view = lipgloss.JoinVertical(lipgloss.Center, view, help)
+	}
+	return view
 }

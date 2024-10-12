@@ -80,32 +80,34 @@ func (n *Navigator) Update(msg tea.Msg) (*Navigator, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if n.shared.mode == NORMAL_MODE {
-			switch {
-			case key.Matches(msg, n.shared.keymap.next):
-				if n.isFocused && n.isVisible {
-					n.nextSelector()
-					cmds = append(cmds, n.selectors[n.activeSelectorIndex].PushCurrentArticle())
-				}
-			case key.Matches(msg, n.shared.keymap.prev):
-				if n.isFocused && n.isVisible {
-					n.prevSelector()
-					cmds = append(cmds, n.selectors[n.activeSelectorIndex].PushCurrentArticle())
-				}
-			case key.Matches(msg, n.shared.keymap.right):
-				if n.isVisible {
-					n.isFocused = false
-				}
-			case key.Matches(msg, n.shared.keymap.left):
-				if n.isVisible {
-					n.isFocused = true
-				}
-			case key.Matches(msg, n.shared.keymap.full):
-				n.isVisible = !n.isVisible
-			case key.Matches(msg, n.shared.keymap.search):
-				if n.isFocused && n.isVisible {
-					n.selectSearchSelector()
-				}
+		if n.shared.mode == INSERT_MODE {
+			break
+		}
+
+		switch {
+		case key.Matches(msg, n.shared.keymap.next):
+			if n.isFocused && n.isVisible {
+				n.nextSelector()
+				cmds = append(cmds, n.selectors[n.activeSelectorIndex].PushSelectedArticle())
+			}
+		case key.Matches(msg, n.shared.keymap.prev):
+			if n.isFocused && n.isVisible {
+				n.prevSelector()
+				cmds = append(cmds, n.selectors[n.activeSelectorIndex].PushSelectedArticle())
+			}
+		case key.Matches(msg, n.shared.keymap.right):
+			if n.isVisible {
+				n.isFocused = false
+			}
+		case key.Matches(msg, n.shared.keymap.left):
+			if n.isVisible {
+				n.isFocused = true
+			}
+		case key.Matches(msg, n.shared.keymap.full):
+			n.isVisible = !n.isVisible
+		case key.Matches(msg, n.shared.keymap.search):
+			if n.isFocused && n.isVisible {
+				n.selectSearchSelector()
 			}
 		}
 	}

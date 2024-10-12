@@ -17,7 +17,7 @@ const (
 )
 
 type Selector interface {
-	PushCurrentArticle() tea.Cmd
+	PushSelectedArticle() tea.Cmd
 	SelectorType() SelectorType
 	SetVisible(bool)
 	IsVisible() bool
@@ -80,9 +80,9 @@ func (s *BaseSelector) getSelectedArticle() tagesschau.Article {
 	return s.articles[s.selectedIndex]
 }
 
-func (s BaseSelector) PushCurrentArticle() tea.Cmd {
+func (s BaseSelector) PushSelectedArticle() tea.Cmd {
 	return func() tea.Msg {
-		return ChangedActiveArticle(s.getSelectedArticle())
+		return UpdatedArticle(s.getSelectedArticle())
 	}
 }
 
@@ -150,7 +150,7 @@ func (s BaseSelector) Update(msg tea.Msg) (BaseSelector, tea.Cmd) {
 
 	if s.list.Index() != s.selectedIndex {
 		s.selectedIndex = s.list.Index()
-		cmds = append(cmds, s.PushCurrentArticle())
+		cmds = append(cmds, s.PushSelectedArticle())
 	}
 
 	return s, tea.Batch(cmds...)

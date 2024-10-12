@@ -157,22 +157,7 @@ func (k KeyMap) ShortHelp() []key.Binding {
 
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.left},
-		{k.right},
-		{k.up},
-		{k.down},
-		{k.next},
-		{k.prev},
-		{k.full},
-		{k.start},
-		{k.end},
-		{k.article},
-		{k.image},
-		{k.details},
-		{k.open},
-		{k.video},
-		{k.shortNews},
-		{k.help},
-		{k.quit},
+		{k.left, k.right, k.up, k.down, k.prev, k.next, k.help, k.quit},
+		{k.full, k.start, k.end, k.article, k.image, k.details, k.open, k.video, k.shortNews},
 	}
 }

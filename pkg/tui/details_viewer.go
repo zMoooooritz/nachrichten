@@ -30,10 +30,8 @@ func (d *Details) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
-	case ChangedActiveArticle:
+	case UpdatedArticle:
 		d.SetArticle(tagesschau.Article(msg))
-	case RefreshActiveViewer:
-		d.SetArticle(d.shared.activeArticle)
 	}
 
 	if d.isActive {
@@ -61,7 +59,7 @@ func (d *Details) handleNumberInput(number int) tea.Cmd {
 		article, err := tagesschau.LoadArticle(related[index].Details)
 		if err == nil {
 			return tea.Batch(
-				func() tea.Msg { return ChangedActiveArticle(*article) },
+				func() tea.Msg { return UpdatedArticle(*article) },
 				func() tea.Msg { return ShowTextViewer{} },
 			)
 		}
@@ -76,7 +74,9 @@ func (d *Details) SetArticle(article tagesschau.Article) {
 
 func (d Details) buildDetails(article tagesschau.Article) string {
 	details := ""
-	if article.IsRegionalArticle() {
+	if article.IsEmptyArticle() {
+		details = ""
+	} else if article.IsRegionalArticle() {
 		details = d.buildRegionalArticleDetails(article)
 	} else {
 		details = d.buildNationalArticleDetails(article)

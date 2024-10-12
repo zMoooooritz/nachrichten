@@ -28,10 +28,8 @@ func (r *Reader) Update(msg tea.Msg) (Viewer, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
-	case ChangedActiveArticle:
+	case UpdatedArticle:
 		r.SetArticle(tagesschau.Article(msg))
-	case RefreshActiveViewer:
-		r.SetArticle(r.shared.activeArticle)
 	}
 
 	if r.IsFocused() || r.isFullScreen {

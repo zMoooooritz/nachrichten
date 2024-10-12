@@ -1,23 +1,12 @@
 package tui
 
 import (
-	"time"
-
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
-)
-
-var (
-	noArticles = []tagesschau.Article{
-		{
-			Topline: "LEER",
-			Date:    time.Now(),
-		},
-	}
 )
 
 type SearchSelector struct {
@@ -44,7 +33,7 @@ func NewSearchSelector(selector BaseSelector) *SearchSelector {
 	searchInput.Cursor.TextStyle = selector.shared.style.InactiveStyle
 	searchInput.TextStyle = selector.shared.style.InactiveStyle
 
-	selector.articles = noArticles
+	selector.articles = []tagesschau.Article{tagesschau.EMPTY_ARTICLE()}
 	return &SearchSelector{
 		BaseSelector: selector,
 		search:       searchInput,
@@ -63,10 +52,10 @@ func (s *SearchSelector) Update(msg tea.Msg) (Selector, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case LoadingArticlesFailed:
-		s.articles = noArticles
+		s.articles = []tagesschau.Article{tagesschau.EMPTY_ARTICLE()}
 		s.list.SetItems([]list.Item{})
 		s.selectedIndex = 0
-		cmds = append(cmds, s.PushCurrentArticle())
+		cmds = append(cmds, s.PushSelectedArticle())
 	case tagesschau.SearchResult:
 		result := tagesschau.SearchResult(msg)
 		s.articles = result.Articles
@@ -74,7 +63,7 @@ func (s *SearchSelector) Update(msg tea.Msg) (Selector, tea.Cmd) {
 		if s.shared.config.Settings.PreloadThumbnails {
 			go s.shared.imageCache.LoadThumbnails(s.articles)
 		}
-		cmds = append(cmds, s.PushCurrentArticle())
+		cmds = append(cmds, s.PushSelectedArticle())
 	case tea.KeyMsg:
 		if s.isFocused && s.isVisible {
 			if s.shared.mode == NORMAL_MODE {
