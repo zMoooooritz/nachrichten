@@ -27,7 +27,7 @@ func NewHelper(shared *SharedState, hstate HelpState) *Helper {
 		model:  help.New(),
 		state:  hstate,
 	}
-	h.model.FullSeparator = " • "
+	h.model.FullSeparator = "    "
 	h.model.ShortSeparator = " • "
 	h.model.Styles.ShortKey = shared.style.InactiveStyle
 	h.model.Styles.FullKey = shared.style.InactiveStyle

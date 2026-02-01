@@ -27,8 +27,8 @@ type Navigator struct {
 
 func NewNavigator(shared *SharedState) *Navigator {
 	selectors := []Selector{
-		NewHomeSelector(NewSelector(ST_NATIONAL, shared, true)),
-		NewHomeSelector(NewSelector(ST_REGIONAL, shared, false)),
+		NewNewsSelector(NewSelector(ST_NATIONAL, shared, true)),
+		NewNewsSelector(NewSelector(ST_REGIONAL, shared, false)),
 		NewSearchSelector(NewSelector(ST_SEARCH, shared, false)),
 	}
 

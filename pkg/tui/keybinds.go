@@ -151,13 +151,19 @@ func disabledBinding() key.Binding {
 	return key.NewBinding(key.WithDisabled())
 }
 
+func emptyHelpEntry() key.Binding {
+	return key.NewBinding(key.WithKeys(""), key.WithHelp("", ""))
+}
+
 func (k KeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.left, k.right, k.up, k.down, k.next, k.help, k.quit}
 }
 
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.left, k.right, k.up, k.down, k.prev, k.next, k.help, k.quit},
-		{k.full, k.start, k.end, k.article, k.image, k.details, k.open, k.video, k.shortNews},
+		{k.left, k.prev, k.full, k.article, k.open},
+		{k.up, k.start, emptyHelpEntry(), k.image, k.video},
+		{k.down, k.end, k.help, k.details, k.shortNews},
+		{k.right, k.next, k.quit, emptyHelpEntry(), emptyHelpEntry()},
 	}
 }

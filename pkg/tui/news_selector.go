@@ -5,21 +5,21 @@ import (
 	"github.com/zMoooooritz/nachrichten/pkg/tagesschau"
 )
 
-type HomeSelector struct {
+type NewsSelector struct {
 	BaseSelector
 }
 
-func NewHomeSelector(selector BaseSelector) *HomeSelector {
-	return &HomeSelector{
+func NewNewsSelector(selector BaseSelector) *NewsSelector {
+	return &NewsSelector{
 		BaseSelector: selector,
 	}
 }
 
-func (s HomeSelector) Init() tea.Cmd {
+func (s NewsSelector) Init() tea.Cmd {
 	return nil
 }
 
-func (s *HomeSelector) Update(msg tea.Msg) (Selector, tea.Cmd) {
+func (s *NewsSelector) Update(msg tea.Msg) (Selector, tea.Cmd) {
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -43,10 +43,10 @@ func (s *HomeSelector) Update(msg tea.Msg) (Selector, tea.Cmd) {
 
 	bs, cmd := s.BaseSelector.Update(msg)
 	cmds = append(cmds, cmd)
-	return &HomeSelector{BaseSelector: bs}, tea.Batch(cmds...)
+	return &NewsSelector{BaseSelector: bs}, tea.Batch(cmds...)
 }
 
-func (s HomeSelector) View() string {
+func (s NewsSelector) View() string {
 	s.list.SetSize(s.width, s.height)
 
 	return s.list.View()
